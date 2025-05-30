@@ -1,0 +1,100 @@
+### PING
+GET http://localhost:3000/
+User-Agent: {{user_agent}}
+
+###
+
+### SIGNUP - Create a new user
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+User-Agent: {{user_agent}}
+
+{
+  "username": "xezzuz",
+  "password": "15987532468Nn*"
+}
+
+###
+
+### LOGIN - Get a JWT ACCESS + REFRESH token
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+User-Agent: {{user_agent}}
+
+{
+  "username": "xezzuz1",
+  "password": "15987532468Nn*1"
+}
+
+###
+
+### COPY the token from the previous response and paste it below
+
+@access_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4NTQzMDA4LjU3MywiZXhwIjoxNzQ4NTQzOTA4LjU3M30.oEEp5KJG68d295TROPdZ400xxT2XOKte4wIlQbY4Hsc
+@refresh_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImp0aSI6IjVjZTZkZTE0MDIzMWM0OGRlMDM3NWMzNTE5MGEyZmE4NDc0ZDExOWVkMmEzMTRiMDk5NDBlOWZhNGU4MWZjYWMiLCJpYXQiOjE3NDg2MjQ5OTgsImV4cCI6MTc0OTIyOTc5OH0.6erVSMK5gxCBjcj2nitcG_0x727Nc43VTjDig87NwxU
+@user_agent = Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+
+###
+
+### Refresh Access Token
+GET http://localhost:3000/api/auth/refresh
+Authorization: Bearer {{refresh_token}}
+User-Agent: {{user_agent}}
+
+###
+
+### Refresh Access Token
+DELETE  http://localhost:3000/api/auth/revoke-all
+Content-Type: application/json
+
+{
+  "user_id": 1
+}
+
+###
+
+### GET Todos (should be empty at first)
+GET http://localhost:3000/api/todos
+Authorization: Bearer {{token}}
+
+###
+
+### CREATE a new Todo
+POST http://localhost:3000/api/todos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "3zoz",
+  "description": false
+}
+
+###
+
+### GET Todos again (should include the new one)
+GET http://localhost:3000/api/todos
+Authorization: Bearer {{token}}
+
+###
+
+### UPDATE the Todo (replace ID with the real ID)
+PATCH http://localhost:3000/api/todos/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "3zoz_updated",
+  "completed": false
+}
+
+###
+
+### DELETE the Todo
+DELETE http://localhost:3000/api/todos/1
+Authorization: Bearer {{token}}
+
+###
+
+### GET Todos again (should be empty again)
+GET http://localhost:3000/api/todos/1
+Authorization: Bearer {{token}}
