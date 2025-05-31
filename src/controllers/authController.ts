@@ -11,7 +11,7 @@ class AuthController {
 	}
 
 	// REGISTER (NO-AUTO-LOGIN): REGISTERS USER IN DB
-	async RegisterRoute(request: FastifyRequest, reply: FastifyReply) {
+	async RegisterEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const userData = request.body as CreateUserRequest;
 			
@@ -24,7 +24,7 @@ class AuthController {
 	}
 	
 	// LOGIN (NO-AUTO-LOGIN): GENERATES ACCESS / REFRESH TOKENS
-	async LoginRoute(request: FastifyRequest, reply: FastifyReply) {
+	async LoginEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const userData = request.body as LoginRequest;
 			const userAgent = request.headers["user-agent"] || '';
@@ -36,31 +36,45 @@ class AuthController {
 			reply.code(401).send({ success: false, error: err.message });
 		}
 	}
-	
-	// REFRESH: GENERATES ACCESS / REFRESH TOKENS
-	async RefreshRoute(request: FastifyRequest, reply: FastifyReply) {
+
+	// LOGOUT
+	async LogoutEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const userAgent = request.headers["user-agent"] || '';
 			
-			const { newAccessToken, newRefreshToken } = await this.authService.refresh(request.headers.authorization, userAgent, request.ip);
+			await this.authService.LogOut(request.headers.authorization, userAgent, request.ip);
 			
-			reply.code(200).send({ success: true, data: { access_token: newAccessToken, refresh_token: newRefreshToken } });
+			reply.code(200).send({ success: true, data: {} });
 		} catch (err: any) {
 			reply.code(400).send({ success: false, error: err.message});
 		}
 	}
 	
-	async RevokeAllRoute(request: FastifyRequest, reply: FastifyReply) {
+	// REFRESH: GENERATES ACCESS / REFRESH TOKENS
+	async RefreshEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		console.log(request.headers["user-agent"]);
+		try {
+			const userAgent = request.headers["user-agent"] || '';
+			
+			const { newAccessToken: accessToken, newRefreshToken: refreshToken } = await this.authService.Refresh(request.headers.authorization, userAgent, request.ip);
+			
+			reply.code(200).send({ success: true, data: { accessToken, refreshToken } });
+		} catch (err: any) {
+			reply.code(400).send({ success: false, error: err.message});
+		}
+	}
+	
+	async RevokeAllEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			interface temp  {
 				user_id: number
 			};
 
 			const { user_id } = request.body as temp;
-			
-			await this.authService.logoutFromAllDevices(user_id);
-			
-			reply.code(200).send({ success: true, data: {} });
+
+			throw new Error('Not implemented yet');
+			// await this.authService.logoutFromAllDevices(user_id);
+			// reply.code(200).send({ success: true, data: {} });
 		} catch (err: any) {
 			reply.code(400).send({ success: false, error: err.message});
 		}

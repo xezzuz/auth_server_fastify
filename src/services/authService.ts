@@ -1,10 +1,12 @@
 import UserRepository from "../repositories/userRepository";
-import AuthRepository from "../repositories/authRepository";
 import jwt from 'jsonwebtoken'
 import { CreateUserRequest, LoginRequest, User } from "../types";
 import bcrypt from 'bcrypt';
 import AuthUtils, { JWT_TOKEN, JWT_REFRESH_PAYLOAD } from '../utils/auth/Auth'
 import { FormError, InvalidCredentialsError, PasswordLengthError, SessionExpiredError, SessionNotFoundError, SessionRevokedError, TokenExpiredError, TokenInvalidError, TokenRequiredError, UserAlreadyExistsError, UserNotFoundError, UsernameLengthError, WeakPasswordError } from "../types/auth.types";
+import SessionManager from "./sessionService";
+import { SessionFingerprint } from "../types";
+import { UAParser } from 'ua-parser-js';
 
 const DEFAULT_BCRYPT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -28,13 +30,15 @@ interface AuthConfig {
 
 class AuthService {
 	private userRepository: UserRepository;
-	private authRepository: AuthRepository;
+	// private authRepository: AuthRepository;
 	private authUtils: AuthUtils;
 	private authConfig: AuthConfig;
+	private sessionManager: SessionManager;
 
 	constructor() {
 		this.userRepository = new UserRepository();
-		this.authRepository = new AuthRepository();
+		// this.authRepository = new AuthRepository();
+		this.sessionManager = new SessionManager();
 		this.authUtils = new AuthUtils();
 		this.authConfig = {
 			bcryptRounds: DEFAULT_BCRYPT_ROUNDS,
@@ -70,8 +74,9 @@ class AuthService {
 		return { user: userWithoutPassword};
 	}
 
-	async LogIn(userData: LoginRequest, userAgent: string, ip: string) : Promise<{ user: Omit<User, 'password'>, access_token: JWT_TOKEN, refresh_token: JWT_TOKEN }> {
+	async LogIn(userData: LoginRequest, userAgent: string, ip: string) : Promise<{ user: Omit<User, 'password'>, accessToken: JWT_TOKEN, refreshToken: JWT_TOKEN }> {
 		const { username, password } = userData;
+		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
 
 		if (!username || !username.trim() || !password)
 			throw new FormError();
@@ -90,65 +95,85 @@ class AuthService {
 			this.authConfig.refreshTokenExpiry
 		);
 
-		const runResult = await this.authRepository.createRefreshToken(
-			this.authUtils.decodeJWT(refreshToken), 
-			this.authUtils.getSessionFingerprint(userAgent, ip)
+		await this.sessionManager.createSession(
+			refreshToken,
+			currentSessionFingerprint
 		);
 
 		const { password: _, ...userWithoutPassword} = existingUser;
 
-		return { user: userWithoutPassword, access_token: accessToken, refresh_token: refreshToken };
+		return { user: userWithoutPassword, accessToken, refreshToken };
 	}
 
-	async refresh(authHeader: string | undefined, userAgent: string, ip: string) : Promise<{ access_token: JWT_TOKEN, refresh_token: JWT_TOKEN }> {
+	async LogOut(authHeader: string | undefined, userAgent: string, ip: string) : Promise<void> {
 		const refreshToken = this.getBearerToken(authHeader);
-		
-		let decodedRefreshPayload: JWT_REFRESH_PAYLOAD;
+		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
 
+		let payload: JWT_REFRESH_PAYLOAD;
+	
 		try {
-			decodedRefreshPayload = await this.authUtils.verifyRefreshToken(refreshToken);
+			payload = await this.authUtils.verifyRefreshToken(refreshToken);
 		} catch (err) {
 			if (err instanceof jwt.JsonWebTokenError)
 				throw new TokenInvalidError();
-			else
+			else {
+				this.sessionManager.revokeSession(refreshToken, 'inactivity');
 				throw new TokenExpiredError('Refresh'); // delete related session
+			}
 		}
-		// extra check up on exp in db
 
-		const getResult = await this.authRepository.findRefreshToken(decodedRefreshPayload.jti, decodedRefreshPayload.sub);
-		if (!getResult)
-			throw new Error('Invalid Refresh token! :: not found in db :: re-authenticate');
-		if (getResult.is_revoked)
-			throw new Error('Revoked Refresh token! :: revoked in db :: re-authenticate');
-		if (Date.now() / 1000 > getResult.max_age)
-			throw new Error('Invalid Refresh token! :: max age reached :: re-authenticate');
-		// PROOF OF POSSESION
-		const currentSessionFingerprint = this.authUtils.getSessionFingerprint(userAgent, ip);
-
-		if (currentSessionFingerprint.ip_address !== getResult.ip_address)
-			throw new Error('Invalid Refresh token! :: ip change :: possible token theft :: re-authenticate');
-		if (currentSessionFingerprint.browser_version !== getResult.browser_version)
-			throw new Error('Invalid Refresh token! :: browser change :: possible token theft :: re-authenticate');
-		if (currentSessionFingerprint.device_name !== getResult.device_name)
-			throw new Error('Invalid Refresh token! :: device change :: possible token theft :: re-authenticate');
-
-
-
-		const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await this.authUtils.generateTokenPair(
-			decodedRefreshPayload.sub,
-			this.authConfig.accessTokenExpiry,
-			this.authConfig.refreshTokenExpiry
+		await this.sessionManager.validateSession(
+			refreshToken,
+			currentSessionFingerprint
 		);
 
-		const updateResult = await this.authRepository.revokeRefreshToken(decodedRefreshPayload.jti);
-		const runResult = await this.authRepository.createRefreshToken(this.authUtils.decodeJWT(newRefreshToken), this.authUtils.getSessionFingerprint(userAgent, ip));
+		await this.sessionManager.revokeSession(
+			refreshToken,
+			'logout'
+		);
+	}
+
+	async Refresh(authHeader: string | undefined, userAgent: string, ip: string) : Promise<{ newAccessToken: JWT_TOKEN, newRefreshToken: JWT_TOKEN }> {
+		const refreshToken = this.getBearerToken(authHeader);
+		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
+		
+		let payload: JWT_REFRESH_PAYLOAD;
+
+		try {
+			payload = await this.authUtils.verifyRefreshToken(refreshToken);
+		} catch (err) {
+			if (err instanceof jwt.JsonWebTokenError)
+				throw new TokenInvalidError();
+			else {
+				this.sessionManager.revokeSession(refreshToken, 'inactivity');
+				throw new TokenExpiredError('Refresh'); // delete related session
+			}
+		}
+		
+		await this.sessionManager.validateSession(
+			refreshToken,
+			currentSessionFingerprint
+		);
+		
+		const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await this.authUtils.generateTokenPair(
+			payload.sub,
+			this.authConfig.accessTokenExpiry,
+			this.authConfig.refreshTokenExpiry,
+			payload.session_id,
+			payload.version + 1
+		);
+		
+		await this.sessionManager.refreshSession(
+			newRefreshToken,
+			currentSessionFingerprint
+		);
 
 		return { newAccessToken, newRefreshToken };
 	}
 
-	async logoutFromAllDevices(user_id: number) {
-		return await this.authRepository.revokeAllRefreshTokens(user_id);
-	}
+	// async logoutFromAllDevices(user_id: number) {
+	// 	return await this.authRepository.revokeAllRefreshTokens(user_id);
+	// }
 
 	private validateUserInput(username: string | undefined, password: string | undefined) {
 		if (!username || !username.trim() || !password)
@@ -175,20 +200,26 @@ class AuthService {
 		return bearerToken;
 	}
 
-	private async validateRefreshToken(refreshTokenPayload: JWT_REFRESH_PAYLOAD, userAgent: string, ip: string) {
-		const isFound = await this.authRepository.findRefreshToken(refreshTokenPayload.jti, refreshTokenPayload.sub);
+	private getFingerprint(userAgent: string, ip: string) : SessionFingerprint {
+		const parser = new UAParser(userAgent);
 
-		if (!isFound) // cleaned
-			throw new SessionNotFoundError();
-		if (isFound.is_revoked) // re-use
-			throw new SessionRevokedError();
-		if (Date.now() / 1000 > isFound.max_age) // hard exipry reached
-			throw new SessionExpiredError();
+		const ua = parser.getResult();
 
-		if (this.authConfig.allowIpChange && isFound.ip_address !== ip)
-			throw new SessionRevokedError();
-		if (this.authConfig.allowBrowserChange && isFound.browser_version !== ip)
-			throw new SessionRevokedError();
+		let deviceName = [ ua.device.vendor || '', ua.device.model || '', ua.os.name || '', ua.os.version || ''].filter(Boolean).join(' ').trim();
+		let browserVersion = [ ua.browser.name || '', ua.browser.major || '' ].filter(Boolean).join(' ').trim();
+
+		if (!deviceName)
+			deviceName = 'Unknown Device';
+		if (!browserVersion)
+			browserVersion = 'Unknown Browser';
+
+		const fingerprint: SessionFingerprint = {
+			device_name: deviceName,
+			browser_version: browserVersion,
+			ip_address: ip
+		}
+
+		return fingerprint;
 	}
 }
 

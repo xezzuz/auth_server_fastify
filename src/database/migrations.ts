@@ -23,21 +23,23 @@ const MIGRATIONS = [
 		name: 'create-refresh-tokens-table',
 		sql: `
 			CREATE TABLE IF NOT EXISTS refresh_tokens (
-				jti TEXT PRIMARY KEY,
+				session_id TEXT PRIMARY KEY,
 
+				version INTEGER DEFAULT 1,
 				is_revoked BOOLEAN DEFAULT FALSE,
+				reason TEXT,
 
-				device_name TEXT DEFAULT NULL,
-				browser_version TEXT DEFAULT NULL,
-				ip_address TEXT DEFAULT NULL,
+				device_name TEXT NOT NULL,
+				browser_version TEXT NOT NULL,
+				ip_address TEXT NOT NULL,
 
 				created_at DATETIME NOT NULL,
 				expires_at DATETIME NOT NULL,
 
-				max_age DATETIME NOT NULL,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
 				user_id INTEGER NOT NULL,
-				FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+				FOREIGN KEY (user_id) REFERENCES users(id)
 			)
 		`
 	}

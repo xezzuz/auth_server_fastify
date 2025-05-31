@@ -22,8 +22,8 @@ Content-Type: application/json
 User-Agent: {{user_agent}}
 
 {
-  "username": "xezzuz1",
-  "password": "15987532468Nn*1"
+  "username": "xezzuz",
+  "password": "15987532468Nn*"
 }
 
 ###
@@ -31,8 +31,10 @@ User-Agent: {{user_agent}}
 ### COPY the token from the previous response and paste it below
 
 @access_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4NTQzMDA4LjU3MywiZXhwIjoxNzQ4NTQzOTA4LjU3M30.oEEp5KJG68d295TROPdZ400xxT2XOKte4wIlQbY4Hsc
-@refresh_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImp0aSI6IjVjZTZkZTE0MDIzMWM0OGRlMDM3NWMzNTE5MGEyZmE4NDc0ZDExOWVkMmEzMTRiMDk5NDBlOWZhNGU4MWZjYWMiLCJpYXQiOjE3NDg2MjQ5OTgsImV4cCI6MTc0OTIyOTc5OH0.6erVSMK5gxCBjcj2nitcG_0x727Nc43VTjDig87NwxU
+@refresh_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInNlc3Npb25faWQiOiJhMmI4NzEyNTcxYWIwMTJkY2MzNjZkODc3MzVhYjA0YzE0NWJjMzc5ZWVmNjgxMGQ2NmQ2ODYwYzQ5YzNiM2VmIiwidmVyc2lvbiI6MywiaWF0IjoxNzQ4NzIxMTgyLCJleHAiOjE3NDkzMjU5ODJ9.PoCLTvlrftj-qhLsERmaAQir8AbOkJK02CxnnDIzW0g
 @user_agent = Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+@user_agent_device_change = Mozilla/5.0 (X11; Ubuntu 20.10; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+@user_agent_browser_change = Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Brave/1.76.82 Safari/537.36
 
 ###
 
@@ -43,13 +45,10 @@ User-Agent: {{user_agent}}
 
 ###
 
-### Refresh Access Token
-DELETE  http://localhost:3000/api/auth/revoke-all
-Content-Type: application/json
-
-{
-  "user_id": 1
-}
+### LOGOUT
+POST http://localhost:3000/api/auth/logout
+Authorization: Bearer {{refresh_token}}
+User-Agent: {{user_agent}}
 
 ###
 
