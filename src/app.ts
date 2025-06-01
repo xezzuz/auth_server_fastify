@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify';
 import authRouter from './routes/authRouter';
 import { db } from './database/index';
 import runMigrations from './database/migrations';
+import cors from '@fastify/cors';
 
 // declare module 'fastify' {
 // 	interface FastifyInstance {
@@ -15,6 +16,7 @@ async function buildApp(): Promise<FastifyInstance> {
 
 	// REGISTER DATABASE PLUGIN
 	// fastify.register(SQLitePlugin);
+	await fastify.register(cors, { origin: true });
 
 	// REGISTER AUTH PLUGIN
 	await fastify.register(authRouter, { prefix: '/api/auth' });

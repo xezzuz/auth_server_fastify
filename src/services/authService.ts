@@ -4,20 +4,13 @@ import { CreateUserRequest, LoginRequest, User } from "../types";
 import bcrypt from 'bcrypt';
 import AuthUtils, { JWT_TOKEN, JWT_REFRESH_PAYLOAD } from '../utils/auth/Auth'
 import { FormError, InvalidCredentialsError, PasswordLengthError, SessionExpiredError, SessionNotFoundError, SessionRevokedError, TokenExpiredError, TokenInvalidError, TokenRequiredError, UserAlreadyExistsError, UserNotFoundError, UsernameLengthError, WeakPasswordError } from "../types/auth.types";
-import SessionManager from "./sessionService";
+import SessionManager, { SessionConfig } from "./sessionService";
 import { SessionFingerprint } from "../types";
 import { UAParser } from 'ua-parser-js';
 
-const DEFAULT_BCRYPT_ROUNDS = 12;
-const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '7d';
-const SESSION_HARD_EXPIRY = '30d';
-const MAX_CONCURRENT_SESSIONS = 4;
-const MAX_SESSION_FINGERPRINT_CHANGE = 1;
-const BCRYPT_TIMING_HASH = bcrypt.hashSync('xuotjds;glsgf34%(#1fjkfdsfdsklnkcldsaf', 12);
-
-interface AuthConfig {
+export interface AuthConfig {
 	bcryptRounds: number,
+	bcryptDummyHash: string,
 	accessTokenExpiry: string,
 	refreshTokenExpiry: string,
 	sessionHardExpiry: string,
@@ -30,27 +23,15 @@ interface AuthConfig {
 
 class AuthService {
 	private userRepository: UserRepository;
-	// private authRepository: AuthRepository;
 	private authUtils: AuthUtils;
 	private authConfig: AuthConfig;
 	private sessionManager: SessionManager;
 
-	constructor() {
+	constructor(config: AuthConfig) {
+		this.authConfig = config;
 		this.userRepository = new UserRepository();
-		// this.authRepository = new AuthRepository();
-		this.sessionManager = new SessionManager();
+		this.sessionManager = new SessionManager(config);
 		this.authUtils = new AuthUtils();
-		this.authConfig = {
-			bcryptRounds: DEFAULT_BCRYPT_ROUNDS,
-			accessTokenExpiry: ACCESS_TOKEN_EXPIRY,
-			refreshTokenExpiry: REFRESH_TOKEN_EXPIRY,
-			sessionHardExpiry: SESSION_HARD_EXPIRY,
-			allowIpChange: true,
-			allowBrowserChange: false,
-			allowDeviceChange: false,
-			maxConcurrentSessions: MAX_CONCURRENT_SESSIONS,
-			maxSessionFingerprintChange: MAX_SESSION_FINGERPRINT_CHANGE
-		}
 	}
 
 	async SignUp(userData: CreateUserRequest) : Promise<{ user: Omit<User, 'password'> }> {
@@ -82,7 +63,7 @@ class AuthService {
 			throw new FormError();
 
 		const existingUser = await this.userRepository.findByUsername(username);
-		const isValidPassword = await bcrypt.compare(password, existingUser ? existingUser.password : BCRYPT_TIMING_HASH);
+		const isValidPassword = await bcrypt.compare(password, existingUser ? existingUser.password : this.authConfig.bcryptDummyHash);
 		if (!existingUser || !isValidPassword)
 			throw new InvalidCredentialsError();
 

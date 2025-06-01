@@ -32,12 +32,10 @@ class UserRepository {
 	}
 
 	async findByUsername(username: string) : Promise<User> {
-		console.log(`FINDING BY USERNAME`);
 		const getResult = await db.get<User>(
 			`SELECT id, username, password, first_name, last_name, created_at, updated_at FROM users WHERE username = ?`,
 			[username]
 		);
-		console.log(`DONE`);
 
 		return getResult;
 	}

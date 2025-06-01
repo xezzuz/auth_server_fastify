@@ -3,12 +3,9 @@ import { SessionFingerprint } from "../types";
 import SessionRepository from "../repositories/sessionRepository";
 import { JWT_REFRESH_PAYLOAD } from "../utils/auth/Auth";
 import { SessionExpiredError, SessionRevokedError, SessionNotFoundError } from "../types/auth.types";
+import { AuthConfig } from "./authService";
 
-const SESSION_EXPIRY = '30d';
-const MAX_CONCURRENT_SESSIONS = 4;
-const MAX_SESSION_FINGERPRINT_CHANGE = 1;
-
-interface SessionConfig {
+export interface SessionConfig {
 	sessionExpiry: string,
 	maxConcurrentSessions: number,
 	maxSessionFingerprintChange: number,
@@ -22,16 +19,16 @@ class SessionManager {
 	private sessionRepository: SessionRepository;
 	private sessionConfig: SessionConfig;
 
-	constructor() {
+	constructor(authConfig: AuthConfig) {
 		this.authUtils = new AuthUtils();
 		this.sessionRepository = new SessionRepository();
 		this.sessionConfig = {
-			sessionExpiry: SESSION_EXPIRY,
-			maxConcurrentSessions: MAX_CONCURRENT_SESSIONS,
-			maxSessionFingerprintChange: MAX_SESSION_FINGERPRINT_CHANGE,
-			allowIpChange: true,
-			allowBrowserChange: false,
-			allowDeviceChange: false
+			sessionExpiry: authConfig.sessionHardExpiry,
+			maxConcurrentSessions: authConfig.maxConcurrentSessions,
+			maxSessionFingerprintChange: authConfig.maxSessionFingerprintChange,
+			allowIpChange: authConfig.allowIpChange,
+			allowBrowserChange: authConfig.allowBrowserChange,
+			allowDeviceChange: authConfig.allowDeviceChange
 		}
 	}
 
@@ -101,7 +98,7 @@ class SessionManager {
 			throw new SessionRevokedError();
 	}
 
-	public async revokeSession(refreshToken: string, reason: string) { // params?
+	public async revokeSession(refreshToken: string, reason: string) {
 		const { session_id, sub: user_id }: JWT_REFRESH_PAYLOAD = this.authUtils.decodeJWT(refreshToken);
 
 		await this.sessionRepository.update(
@@ -114,7 +111,7 @@ class SessionManager {
 		);
 	}
 
-	public async revokeAllSessions(refreshToken: string, reason: string) { // params?
+	public async revokeAllSessions(refreshToken: string, reason: string) {
 		const { sub: user_id }: JWT_REFRESH_PAYLOAD = this.authUtils.decodeJWT(refreshToken);
 
 		await this.sessionRepository.updateAll(

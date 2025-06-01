@@ -1,13 +1,35 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import AuthService from "../services/authService";
-import { CreateUserRequest, LoginRequest } from "../types";
+import AuthService, { AuthConfig } from "../services/authService";
+import { CreateUserRequest, ErrorResponse, LoginRequest } from "../types";
+import bcrypt from 'bcrypt';
+import AuthErrorHandler from "./authErrorHandler";
 
+const DEFAULT_BCRYPT_ROUNDS = 12;
+const ACCESS_TOKEN_EXPIRY = '15m';
+const REFRESH_TOKEN_EXPIRY = '7d';
+const SESSION_HARD_EXPIRY = '30d';
+const MAX_CONCURRENT_SESSIONS = 4;
+const MAX_SESSION_FINGERPRINT_CHANGE = 1;
+const BCRYPT_TIMING_HASH = bcrypt.hashSync('xuotjds;glsgf34%(#1fjkfdsfdsklnkcldsaf', 12);
+
+const authenticationConfig: AuthConfig = {
+	bcryptRounds: DEFAULT_BCRYPT_ROUNDS,
+	bcryptDummyHash: BCRYPT_TIMING_HASH,
+	accessTokenExpiry: ACCESS_TOKEN_EXPIRY,
+	refreshTokenExpiry: REFRESH_TOKEN_EXPIRY,
+	sessionHardExpiry: SESSION_HARD_EXPIRY,
+	allowIpChange: true,
+	allowBrowserChange: false,
+	allowDeviceChange: false,
+	maxConcurrentSessions: MAX_CONCURRENT_SESSIONS,
+	maxSessionFingerprintChange: MAX_SESSION_FINGERPRINT_CHANGE
+}
 
 class AuthController {
 	private authService: AuthService;
 
 	constructor() {
-		this.authService = new AuthService();
+		this.authService = new AuthService(authenticationConfig);
 	}
 
 	// REGISTER (NO-AUTO-LOGIN): REGISTERS USER IN DB
@@ -19,7 +41,9 @@ class AuthController {
 			
 			reply.code(201).send({ success: true, data: createdUser});
 		} catch (err: any) {
-			reply.code(400).send({ success: false, error: err.message });
+			const response = AuthErrorHandler.handle(err, true);
+
+			reply.code(response.status).send(response.body);
 		}
 	}
 	

@@ -65,3 +65,12 @@ export interface SessionFingerprint {
 	browser_version: string,
 	ip_address: string
 }
+
+export interface ErrorResponse {
+	success: boolean,
+	error: {
+		code: string;
+		message: string;
+		details?: any;
+	}
+}
