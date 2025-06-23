@@ -4,6 +4,7 @@ import { CreateUserRequest, ErrorResponse, LoginRequest, RegisterRequest } from 
 import bcrypt from 'bcrypt';
 import AuthErrorHandler from "./authErrorHandler";
 import { AuthError, TokenRequiredError } from "../types/auth.types";
+import TwoFactorService from "../services/twoFactorService";
 
 const DEFAULT_BCRYPT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -28,9 +29,11 @@ const authenticationConfig: AuthConfig = {
 
 class AuthController {
 	private authService: AuthService;
+	private twoFactorService: TwoFactorService;
 
 	constructor() {
 		this.authService = new AuthService(authenticationConfig);
+		this.twoFactorService = new TwoFactorService();
 	}
 
 	// REGISTER (NO-AUTO-LOGIN): REGISTERS USER IN DB
@@ -136,6 +139,31 @@ class AuthController {
 			// reply.code(200).send({ success: true, data });
 		} catch (err: any) {
 			reply.status(400).send({ success: false, error: err.message });
+		}
+	}
+
+	async TwoFactorSetupEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		// const { user_id } = request.body as { user_id: any };
+		const user_id = "1";
+
+		try {
+			const data: { id: string, secret: string } = await this.twoFactorService.Setup(user_id) as { id: string, secret: string };
+			reply.status(201).send(data);
+		} catch (err: any) {
+			reply.status(400).send(err);
+		}
+	}
+
+	async TwoFactorVerifyEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		// const { user_id } = request.body as { user_id: any };
+		const { token } = request.query as { token: string };
+		const user_id = "1";
+
+		try {
+			const verified = await this.twoFactorService.Verify(user_id, token);
+			reply.status(201).send(verified);
+		} catch (err: any) {
+			reply.status(400).send(err);
 		}
 	}
 }

@@ -50,6 +50,24 @@ const MIGRATIONS = [
 				FOREIGN KEY (user_id) REFERENCES users(id)
 			)
 		`
+	},
+	{
+		id: 3,
+		name: 'create-two-factor-auth-table',
+		sql: `
+			CREATE TABLE IF NOT EXISTS two_factor_auth (
+				id INTEGER PRIMARY KEY AUTOINCREMENT, -- 2FA ID
+				
+				secret TEXT DEFAULT NULL,
+				verified BOOLEAN DEFAULT FALSE,
+				
+				type TEXT DEFAULT NULL,
+				enabled BOOLEAN DEFAULT FALSE,
+				
+				user_id INTEGER NOT NULL,
+				FOREIGN KEY (user_id) REFERENCES users(id)
+			)
+		`
 	}
 ];
 
