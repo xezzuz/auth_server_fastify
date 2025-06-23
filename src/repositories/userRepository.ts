@@ -1,40 +1,49 @@
 import { db } from "../database";
-import { CreateUserRequest, User } from "../types";
+import { CreateUserRequest, SQLCreateUser, User } from "../types";
 
 class UserRepository {
 
-	async create(userData: CreateUserRequest) : Promise<User> {
-		const { username, password } = userData;
-
+	async create(userData: SQLCreateUser, auth_provider: string = 'local') : Promise<User> {
+		const { username, password, email, first_name, last_name, bio, avatar_url } = userData;
+		
 		const runResult = await db.run(
-			`INSERT INTO users (username, password) VALUES (?, ?)`,
-			[username, password]
+			`INSERT INTO users (username, password, email, first_name, last_name, avatar_url, auth_provider) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			[username, password, email, first_name, last_name, avatar_url, auth_provider]
 		);
 
 		const createdUser = await db.get<User>(
-			`SELECT id, username, password, first_name, last_name, created_at, updated_at FROM users WHERE id = ?`,
+			`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?`,
 			[runResult.lastID]
 		);
 
 		if (!createdUser)
-			throw new Error(`Error creating user <${username}>!`);
+			throw new Error(`Error creating user <${username}>!`); // TODO
 
 		return createdUser;
 	}
 
 	async findById(id: number) : Promise<User | undefined> {
 		const getResult = await db.get<User>(
-			`SELECT id, username, password, first_name, last_name, created_at, updated_at FROM users WHERE id = ?`,
+			`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?`,
 			[id]
 		);
 
 		return getResult;
 	}
 
-	async findByUsername(username: string) : Promise<User> {
+	async findByUsername(username: string) : Promise<User | undefined> {
 		const getResult = await db.get<User>(
-			`SELECT id, username, password, first_name, last_name, created_at, updated_at FROM users WHERE username = ?`,
+			`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE username = ?`,
 			[username]
+		);
+
+		return getResult;
+	}
+
+	async findByEmail(email: string) : Promise<User | undefined> {
+		const getResult = await db.get<User>(
+			`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE email = ?`,
+			[email]
 		);
 
 		return getResult;
@@ -84,10 +93,27 @@ class UserRepository {
 		return runResult.changes > 0;
 	}
 
-	async exists(username: string) : Promise<boolean> {
-		const findResult = await this.findByUsername(username);
+	async exists(username: string, email: string) : Promise<boolean> {
+		const usernameResult = await this.findByUsername(username);
+		const emailResult = await this.findByEmail(email);
 
-		if (findResult)
+		if (usernameResult || emailResult)
+			return true;
+		return false;
+	}
+
+	async existsByUsername(username: string) : Promise<boolean> {
+		const usernameResult = await this.findByUsername(username);
+
+		if (usernameResult)
+			return true;
+		return false;
+	}
+
+	async existsByEmail(email: string) : Promise<boolean> {
+		const emailResult = await this.findByEmail(email);
+
+		if (emailResult)
 			return true;
 		return false;
 	}

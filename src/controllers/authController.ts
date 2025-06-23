@@ -1,8 +1,9 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import AuthService, { AuthConfig } from "../services/authService";
-import { CreateUserRequest, ErrorResponse, LoginRequest } from "../types";
+import { CreateUserRequest, ErrorResponse, LoginRequest, RegisterRequest } from "../types";
 import bcrypt from 'bcrypt';
 import AuthErrorHandler from "./authErrorHandler";
+import { AuthError, TokenRequiredError } from "../types/auth.types";
 
 const DEFAULT_BCRYPT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -35,7 +36,8 @@ class AuthController {
 	// REGISTER (NO-AUTO-LOGIN): REGISTERS USER IN DB
 	async RegisterEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
-			const userData = request.body as CreateUserRequest;
+			console.log(request.body);
+			const userData = request.body as RegisterRequest;
 			
 			const createdUser = await this.authService.SignUp(userData);
 			
@@ -101,6 +103,40 @@ class AuthController {
 			// reply.code(200).send({ success: true, data: {} });
 		} catch (err: any) {
 			reply.code(400).send({ success: false, error: err.message});
+		}
+	}
+
+	async GoogleOAuthEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		const { code } = request.query as { code?: string };
+
+		const userAgent = request.headers["user-agent"] || '';
+
+		try {
+			if (!code)
+				throw new Error('Google OAuth Code is required');
+
+			const data = await this.authService.GoogleLogIn(code, userAgent, request.ip);
+			reply.redirect(`http://localhost:3000/login?access_token=${data.accessToken}&refresh_token=${data.refreshToken}`);
+			// reply.code(200).send({ success: true, data });
+		} catch (err: any) {
+			reply.status(400).send({ success: false, error: err.message });
+		}
+	}
+
+	async IntraOAuthEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		const { code } = request.query as { code?: string };
+
+		const userAgent = request.headers["user-agent"] || '';
+
+		try {
+			if (!code)
+				throw new Error('Intra OAuth Code is required');
+
+			const data = await this.authService.IntraLogIn(code, userAgent, request.ip);
+			reply.redirect(`http://localhost:3000/login?access_token=${data.accessToken}&refresh_token=${data.refreshToken}`);
+			// reply.code(200).send({ success: true, data });
+		} catch (err: any) {
+			reply.status(400).send({ success: false, error: err.message });
 		}
 	}
 }

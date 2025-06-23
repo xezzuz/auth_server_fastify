@@ -12,7 +12,7 @@ import cors from '@fastify/cors';
 // }
 
 async function buildApp(): Promise<FastifyInstance> {
-	const fastify: FastifyInstance = Fastify();
+	const fastify: FastifyInstance = Fastify({ logger: true });
 
 	// REGISTER DATABASE PLUGIN
 	// fastify.register(SQLitePlugin);

@@ -20,6 +20,15 @@ export class FormError extends AuthError {
 	}
 }
 
+export class FormFieldMissing extends AuthError {
+	public readonly field: string;
+
+	constructor(field: string, details: any = {}) {
+		super(`${field} is required`, 400, `AUTH_${field.toUpperCase()}_REQUIRED`, details);
+		this.field = field;
+	}
+}
+
 export class UsernameLengthError extends AuthError {
 	constructor(message: string = 'Username must be between 4-20 characters') {
 		super(message, 400, 'AUTH_USERNAME_LENGTH');

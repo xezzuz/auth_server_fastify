@@ -2,16 +2,24 @@ import { db } from "./index";
 
 const MIGRATIONS = [
 	{
+		// TODO
+			// ACCOUNT STATUS
+			// IS DELETED
 		id: 1,
 		name: 'create-users-table',
 		sql: `
 			CREATE TABLE IF NOT EXISTS users (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-				username TEXT UNIQUE,
+				email TEXT UNIQUE NOT NULL,
+				username TEXT UNIQUE NOT NULL,
 				password TEXT,
-				first_name TEXT,
-				last_name TEXT,
+				first_name TEXT NOT NULL,
+				last_name TEXT NOT NULL,
+				bio TEXT DEFAULT 'DFK',
+				avatar_url TEXT DEFAULT 'https://pbs.twimg.com/profile_images/1300555471468851202/xtUnFLEm_200x200.jpg',
+				auth_provider TEXT DEFAULT 'local',
+				role TEXT DEFAULT 'user',
 
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

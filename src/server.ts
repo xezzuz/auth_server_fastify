@@ -9,10 +9,10 @@ async function main() {
 		reply.code(200).send('pong');
 	});
 
-	fastify.listen({ host: '127.0.0.1', port: 3001 }, (err: Error | null, address: string) => {
+	fastify.listen({ host: '127.0.0.1', port: 4000 }, (err: Error | null, address: string) => {
 		if (err)
 			process.exit(1);
-		console.log(`Authentication Server is listening on 3001...`);
+		console.log(`Authentication Server is listening on 4000...`);
 	});
 }
 

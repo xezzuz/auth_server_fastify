@@ -1,19 +1,12 @@
 export interface User {
 	id: number,
-	username: string,
-	password: string,
 	first_name: string,
 	last_name: string,
-	created_at: string,
-	updated_at: string
-};
-
-export interface Todo {
-	id: number,
-	title: string,
-	description: string,
-	completed: boolean,
-	user_id: number,
+	email: string,
+	username: string,
+	password: string,
+	bio: string,
+	avatar_url: string,
 	created_at: string,
 	updated_at: string
 };
@@ -25,7 +18,26 @@ export interface UserPayload {
 
 export interface CreateUserRequest {
 	username: string,
-	password: string
+	password: string | null
+};
+
+export interface RegisterRequest {
+	email: string,
+	username: string,
+	password: string,
+	first_name: string,
+	last_name: string,
+};
+
+export interface SQLCreateUser {
+	email: string,
+	username: string,
+	password?: string,
+	first_name: string,
+	last_name: string,
+	bio?: string,
+	avatar_url: string,
+	auth_provider: string
 };
 
 export interface LoginRequest {

@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import AuthController from "../controllers/authController";
 
 async function authRouter(fastify: FastifyInstance) {
@@ -10,6 +10,8 @@ async function authRouter(fastify: FastifyInstance) {
 	fastify.post('/logout', authController.LogoutEndpoint.bind(authController));
 	fastify.get('/refresh', authController.RefreshEndpoint.bind(authController));
 	// fastify.delete('/revoke-all', authController.RevokeAllRoute.bind(authController));
+	fastify.get('/google/callback', authController.GoogleOAuthEndpoint.bind(authController));
+	fastify.get('/42/callback', authController.IntraOAuthEndpoint.bind(authController));
 }
 
 export default authRouter;
