@@ -36,7 +36,6 @@ class AuthController {
 	// REGISTER (NO-AUTO-LOGIN): REGISTERS USER IN DB
 	async RegisterEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
-			console.log(request.body);
 			const userData = request.body as RegisterRequest;
 			
 			const createdUser = await this.authService.SignUp(userData);

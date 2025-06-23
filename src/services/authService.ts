@@ -10,7 +10,7 @@ import { UAParser } from 'ua-parser-js';
 import axios from "axios";
 import 'dotenv/config';
 
-// TODOAdd commentMore actions
+// TODO
 	// VERIFY THE EXISTENCE OF ALL THOSE ENV VARS
 const GOOGLE_OAUTH_CLIENT_ID = process.env['GOOGLE_OAUTH_CLIENT_ID'];
 const GOOGLE_OAUTH_CLIENT_SECRET = process.env['GOOGLE_OAUTH_CLIENT_SECRET'];
@@ -53,7 +53,7 @@ class AuthService {
 	}
 
 	async SignUp(userData: RegisterRequest) : Promise<{ user: Omit<User, 'password'> }> {
-		const { username, password, email, first_name, last_name } = userData;
+		const { username, password, email } = userData;
 
 		this.validateUserInput(userData);
 
@@ -111,11 +111,11 @@ class AuthService {
 
 	async GoogleLogIn(code: string, userAgent: string, ip: string) : Promise<{ accessToken: JWT_TOKEN, refreshToken: JWT_TOKEN }> {
 		try {
-			const data = await this.getGoogleOAuthTokens(code);
-			// verify token signature
-			const decodedJWT = jwt.decode(data.id_token) as { email: string };
+			const { id_token } = await this.getGoogleOAuthTokens(code);
+			// verify token signature?
+			const decodedJWT = jwt.decode(id_token);
 
-			const userData: SQLCreateUser = this.GoogleOAuthDataToRegisterRequest(decodedJWT);
+			const userData: SQLCreateUser = this.GoogleOAuthTokenToData(decodedJWT);
 
 			let	  createdUser;
 			const usernameExists = await this.userRepository.existsByUsername(userData.username);
@@ -153,10 +153,8 @@ class AuthService {
 	async IntraLogIn(code: string, userAgent: string, ip: string) : Promise<{ accessToken: JWT_TOKEN, refreshToken: JWT_TOKEN }> {
 		try {
 			const { access_token } = await this.getIntraOAuthTokens(code);
-			// verify token signature
-			// const decodedJWT = jwt.decode(data.id_token) as { email: string };
-			// console.log(decodedJWT);
-			const userData: SQLCreateUser = await this.IntraOAuthDataToRegisterRequest(access_token);
+
+			const userData: SQLCreateUser = await this.IntraOAuthTokenToData(access_token);
 
 			let	  createdUser;
 			const usernameExists = await this.userRepository.existsByUsername(userData.username);
@@ -261,7 +259,7 @@ class AuthService {
 	// 	return await this.authRepository.revokeAllRefreshTokens(user_id);
 	// }
 
-	private validateUserInput(userData: RegisterRequest) {
+	private validateUserInput(userData: RegisterRequest) : void {
 		const { username, password, email, first_name, last_name } = userData;
 
 		if (!username || !username.trim())
@@ -287,7 +285,7 @@ class AuthService {
 			throw new WeakPasswordError();
 	}
 
-	private getBearerToken(authHeader: string | undefined) {
+	private getBearerToken(authHeader: string | undefined) : string {
 		if (!authHeader)
 			throw new TokenRequiredError();
 
@@ -334,8 +332,8 @@ class AuthService {
 		return data;
 	}
 
-	private GoogleOAuthDataToRegisterRequest(data: any) : SQLCreateUser {
-		return {
+	private GoogleOAuthTokenToData(data: any) : SQLCreateUser {
+		const userData: SQLCreateUser = {
 			email: data.email,
 			username: data.email.split('@')[0],
 			first_name: data.given_name || data.name.split(' ')[0] || 'Ismail',
@@ -343,6 +341,8 @@ class AuthService {
 			avatar_url: data.picture || 'https://pbs.twimg.com/profile_images/1300555471468851202/xtUnFLEm_200x200.jpg',
 			auth_provider: 'Google'
 		}
+
+		return userData;
 	}
 
 	// TODO
@@ -361,16 +361,19 @@ class AuthService {
 		return data;
 	}
 
-	private async IntraOAuthDataToRegisterRequest(access_token: string) : Promise<SQLCreateUser> {
+	private async IntraOAuthTokenToData(access_token: string) : Promise<SQLCreateUser> {
 		const { data } = await axios.get(`https://api.intra.42.fr/v2/me?access_token=${access_token}`);
-		return {
+
+		const userData: SQLCreateUser = {
 			email: data.email,
 			username: data.login,
 			first_name: data.first_name || data.usual_first_name.split(' ')[0] || data.displayname.split(' ')[0],
 			last_name: data.last_name || data.usual_last_name.split(' ')[0] || data.displayname.split(' ')[0],
 			avatar_url: data.image.link || 'https://pbs.twimg.com/profile_images/1300555471468851202/xtUnFLEm_200x200.jpg',
 			auth_provider: '42'
-		}
+		};
+
+		return userData;
 	}
 }
 
