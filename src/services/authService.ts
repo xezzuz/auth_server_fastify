@@ -8,20 +8,23 @@ import SessionManager, { SessionConfig } from "./sessionService";
 import { SessionFingerprint } from "../types";
 import { UAParser } from 'ua-parser-js';
 import axios from "axios";
+import 'dotenv/config';
 
-const GOOGLE_OAUTH_CLIENT_ID="219092502030-fhbshbu6v578888eq8uftsrvr79b0mbb.apps.googleusercontent.com"
-const GOOGLE_OAUTH_CLIENT_SECRET="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"
-const GOOGLE_OAUTH_BACKEND_REDIRECT_URI="http://localhost:4000/api/auth/google/callback"
-const GOOGLE_OAUTH_FRONTEND_REDIRECT_URI="http://localhost:3000/auth/google/callback"
-const GOOGLE_OAUTH_AUTH_URI="https://accounts.google.com/o/oauth2/auth"
-const GOOGLE_OAUTH_EXCHANGE_URL = "https://oauth2.googleapis.com/token";
+// TODOAdd commentMore actions
+	// VERIFY THE EXISTENCE OF ALL THOSE ENV VARS
+const GOOGLE_OAUTH_CLIENT_ID = process.env['GOOGLE_OAUTH_CLIENT_ID'];
+const GOOGLE_OAUTH_CLIENT_SECRET = process.env['GOOGLE_OAUTH_CLIENT_SECRET'];
+const GOOGLE_OAUTH_BACKEND_REDIRECT_URI = process.env['GOOGLE_OAUTH_BACKEND_REDIRECT_URI'];
+const GOOGLE_OAUTH_FRONTEND_REDIRECT_URI = process.env['GOOGLE_OAUTH_FRONTEND_REDIRECT_URI'];
+const GOOGLE_OAUTH_AUTH_URI = process.env['GOOGLE_OAUTH_AUTH_URI'];
+const GOOGLE_OAUTH_EXCHANGE_URL = process.env['GOOGLE_OAUTH_EXCHANGE_URL'];
 
-const INTRA_OAUTH_CLIENT_ID="u-s4t2ud-655ba60e9fbdb73c272d3e1be6541e6745009296e8c9ec57b9cdf7b8e1c60826"
-const INTRA_OAUTH_CLIENT_SECRET="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"
-const INTRA_OAUTH_BACKEND_REDIRECT_URI="http://localhost:4000/api/auth/42/callback"
-const INTRA_OAUTH_FRONTEND_REDIRECT_URI="http://localhost:3000/auth/42/callback"
-const INTRA_OAUTH_AUTH_URI="https://accounts.google.com/o/oauth2/auth"
-const INTRA_OAUTH_EXCHANGE_URL = "https://api.intra.42.fr/oauth/token";
+const INTRA_OAUTH_CLIENT_ID = process.env['INTRA_OAUTH_CLIENT_ID'];
+const INTRA_OAUTH_CLIENT_SECRET = process.env['INTRA_OAUTH_CLIENT_SECRET'];
+const INTRA_OAUTH_BACKEND_REDIRECT_URI = process.env['INTRA_OAUTH_BACKEND_REDIRECT_URI'];
+const INTRA_OAUTH_FRONTEND_REDIRECT_URI = process.env['INTRA_OAUTH_FRONTEND_REDIRECT_URI'];
+const INTRA_OAUTH_AUTH_URI = process.env['INTRA_OAUTH_AUTH_URI'];
+const INTRA_OAUTH_EXCHANGE_URL = process.env['INTRA_OAUTH_EXCHANGE_URL'];
 
 export interface AuthConfig {
 	bcryptRounds: number,
@@ -326,7 +329,7 @@ class AuthService {
 			grant_type: 'authorization_code'
 		};
 
-		const { data } = await axios.post(GOOGLE_OAUTH_EXCHANGE_URL, body);
+		const { data } = await axios.post(GOOGLE_OAUTH_EXCHANGE_URL!, body);
 		console.log(data);
 		return data;
 	}
@@ -337,8 +340,8 @@ class AuthService {
 			username: data.email.split('@')[0],
 			first_name: data.given_name || data.name.split(' ')[0] || 'Ismail',
 			last_name: data.family_name || data.name.split(' ')[1] || 'Demnati',
-			avatar_url: data.picture,
-			auth_provider: 'Google' || 'https://pbs.twimg.com/profile_images/1300555471468851202/xtUnFLEm_200x200.jpg'
+			avatar_url: data.picture || 'https://pbs.twimg.com/profile_images/1300555471468851202/xtUnFLEm_200x200.jpg',
+			auth_provider: 'Google'
 		}
 	}
 
@@ -353,7 +356,7 @@ class AuthService {
 			grant_type: 'authorization_code'
 		};
 
-		const { data } = await axios.post(INTRA_OAUTH_EXCHANGE_URL, body);
+		const { data } = await axios.post(INTRA_OAUTH_EXCHANGE_URL!, body);
 		console.log(data);
 		return data;
 	}
