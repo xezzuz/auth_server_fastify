@@ -144,26 +144,30 @@ class AuthController {
 
 	async TwoFactorSetupEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		// const { user_id } = request.body as { user_id: any };
-		const user_id = "1";
+		const user_id = 1;
 
 		try {
-			const data: { id: string, secret: string } = await this.twoFactorService.Setup(user_id) as { id: string, secret: string };
-			reply.status(201).send(data);
+			const secrets = await this.twoFactorService.setupAuthenticatorApp(user_id);
+			reply.status(201).send({ success: true, data: secrets });
 		} catch (err: any) {
-			reply.status(400).send(err);
+			const response = AuthErrorHandler.handle(err, true);
+
+			reply.code(response.status).send(response.body);
 		}
 	}
 
 	async TwoFactorVerifyEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		// const { user_id } = request.body as { user_id: any };
-		const { token } = request.query as { token: string };
-		const user_id = "1";
+		const user_id = 1;
+		const { code } = request.query as { code: string };
 
 		try {
-			const verified = await this.twoFactorService.Verify(user_id, token);
-			reply.status(201).send(verified);
+			await this.twoFactorService.verifyAuthenticatorApp(user_id, code);
+			reply.status(201).send({ success: true, data: {} });
 		} catch (err: any) {
-			reply.status(400).send(err);
+			const response = AuthErrorHandler.handle(err, true);
+
+			reply.code(response.status).send(response.body);
 		}
 	}
 }

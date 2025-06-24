@@ -107,12 +107,28 @@ export class InvalidCredentialsError extends AuthError {
 		super(message, 401, 'AUTH_INVALID_CREDENTIALS', details);
 	}
 }
-	// account locked, disabled, banned, verified
+// account locked, disabled, banned, verified
+export class InternalServerError extends AuthError {
+	constructor(message: string = 'An unexpected error occured', details: any = {}) {
+		super(message, 500, 'AUTH_INTERNAL_ERROR', details);
+	}
+}
 
 // AUTHORIZATION
 	// RBAC
 
 // 2FA
+export class _2FANotFound extends AuthError {
+	constructor(message: string = '2FA not found', details: any = {}) {
+		super(message, 404, 'AUTH_2FA_NOT_FOUND', details);
+	}
+}
+
+export class _2FAInvalidCode extends AuthError {
+	constructor(message: string = '2FA code is not valid', details: any = {}) {
+		super(message, 400, 'AUTH_2FA_INVALID_CODE', details);
+	}
+}
 
 // PASSWORD RESET
 
