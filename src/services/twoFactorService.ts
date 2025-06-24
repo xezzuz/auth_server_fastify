@@ -93,7 +93,7 @@ class TwoFactorService {
 		return ;
 	}
 	
-	async confirmOTP(otp_code: number, method: string, user_id: number) : Promise<void> {
+	async confirmOTP(otp_code: string, method: string, user_id: number) : Promise<void> {
 		const pendingOTP = await this.twoFactorRepository.findPending2FAMethodByType(method, user_id);
 		if (!pendingOTP)
 			throw new _2FANotFound(method);
@@ -110,7 +110,7 @@ class TwoFactorService {
 		return ;
 	}
 
-	async verifyTOTP(totp_code: number, user_id: number) : Promise<boolean> {
+	async verifyTOTP(totp_code: string, user_id: number) : Promise<boolean> {
 		const enabledTOTP = await this.twoFactorRepository.findEnabled2FAMethodByType('totp', user_id);
 		if (!enabledTOTP)
 			throw new _2FANotEnabled('TOTP');
@@ -120,7 +120,7 @@ class TwoFactorService {
 		return true;
 	}
 	
-	async verifyOTP(method: string, otp_code: number, user_id: number) : Promise<boolean> {
+	async verifyOTP(method: string, otp_code: string, user_id: number) : Promise<boolean> {
 		const enabledOTP = await this.twoFactorRepository.findEnabled2FAMethodByType(method, user_id);
 		if (!enabledOTP)
 			throw new _2FANotEnabled(method);
@@ -156,7 +156,7 @@ class TwoFactorService {
 		});
 	}
 	
-	private _verifyOTP(incoming_code: number, stored_code: number) {
+	private _verifyOTP(incoming_code: string, stored_code: string) {
 		console.log(`verify: ${incoming_code} | ${stored_code}`);
 		return incoming_code === stored_code;
 	}

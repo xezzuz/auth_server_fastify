@@ -183,7 +183,7 @@ class AuthController {
 
 				reply.status(201).send({ success: true, data: {} });
 			} else if (method === 'email' || method === 'sms') {
-				await this.twoFactorService.confirmOTP(parseInt(code), method, parseInt(user_id));
+				await this.twoFactorService.confirmOTP(code, method, parseInt(user_id));
 
 				reply.status(201).send({ success: true, data: {} });
 			} else {
@@ -207,11 +207,11 @@ class AuthController {
 
 		try {
 			if (method === 'totp') {
-				await this.twoFactorService.verifyTOTP(parseInt(code), parseInt(user_id));
+				await this.twoFactorService.verifyTOTP(code, parseInt(user_id));
 
 				reply.status(201).send({ success: true, data: {} });
 			} else if (method === 'email' || method === 'sms') {
-				await this.twoFactorService.verifyOTP(method, parseInt(code), parseInt(user_id));
+				await this.twoFactorService.verifyOTP(method, code, parseInt(user_id));
 
 				reply.status(201).send({ success: true, data: {} });
 			} else {

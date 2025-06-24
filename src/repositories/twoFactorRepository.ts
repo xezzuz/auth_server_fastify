@@ -143,7 +143,7 @@ class TwoFactorRepository {
 	// 	return await this.findEnabled2FAMethodById(new2FAMethod.lastID);
 	// }
 
-	async createOTP(method: string, code: number, expires_at: number, user_id: number) : Promise<any> {
+	async createOTP(method: string, code: string, expires_at: number, user_id: number) : Promise<any> {
 		const newOTP = await db.run(
 			`INSERT INTO otps(method, code, expires_at, user_id) VALUES (?, ?, ?, ?)`,
 			[method, code, expires_at, user_id]

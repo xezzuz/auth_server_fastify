@@ -74,7 +74,7 @@ const MIGRATIONS = [
 				id INTEGER PRIMARY KEY AUTOINCREMENT, -- 2FA ID
 				
 				method TEXT NOT NULL, -- email, sms, totp,
-				otp_temp_code INTEGER,
+				otp_temp_code TEXT,
 				totp_temp_secret TEXT,
 
 				expires_at DATETIME,
@@ -92,7 +92,7 @@ const MIGRATIONS = [
 				id INTEGER PRIMARY KEY AUTOINCREMENT, -- OTP ID
 				
 				method TEXT NOT NULL, -- email, sms,
-				code INTEGER,
+				code TEXT,
 
 				expires_at DATETIME,
 
