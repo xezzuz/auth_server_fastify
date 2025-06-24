@@ -1,6 +1,6 @@
 import { TokenExpiredError } from "jsonwebtoken";
 import { ErrorResponse } from "../types";
-import { AuthError, FormError, InvalidCredentialsError, PasswordLengthError, SessionExpiredError, SessionNotFoundError, SessionRevokedError, TokenInvalidError, TokenRequiredError, UserAlreadyExistsError, UserNotFoundError, UsernameLengthError, WeakPasswordError } from "../types/auth.types";
+import { AuthError, FormError, InvalidCredentialsError, PasswordLengthError, SessionExpiredError, SessionNotFoundError, SessionRevokedError, TokenInvalidError, TokenRequiredError, UserAlreadyExistsError, UserNotFoundError, UsernameLengthError, WeakPasswordError, _2FANotFound, _2FANotEnabled, _2FAAlreadyEnabled, _2FAInvalidCode } from "../types/auth.types";
 
 // export interface ErrorResponse {
 // 	success: boolean,
@@ -83,6 +83,22 @@ class AuthErrorHandler {
 			case error instanceof SessionNotFoundError:
 			case error instanceof SessionExpiredError:
 			case error instanceof SessionRevokedError:
+				return {
+					status: (error as AuthError).statusCode,
+					body: {
+						success: false,
+						error: {
+							code: (error as AuthError).errorCode,
+							message: error.message,
+							details: isDevelopment ? {} : (error as AuthError).details
+						}
+					}
+				};
+			
+			case error instanceof _2FANotFound:
+			case error instanceof _2FANotEnabled:
+			case error instanceof _2FAAlreadyEnabled:
+			case error instanceof _2FAInvalidCode:
 				return {
 					status: (error as AuthError).statusCode,
 					body: {
