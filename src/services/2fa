@@ -1,0 +1,30 @@
+// GET /2FA?type=(app, phone, email) => (gen qrcode, gen code, gen code)
+// POST /2FA/verify?type=(app, phone, email) => (verify code + enable in db)
+// DELETE /2FA => (delete current 2fa method)
+
+// SETUP
+
+// POST /2fa/setup
+// {
+//   "email": "user@example.com",
+//   "method": "email"
+// } => generate otp => store it in pending
+
+// POST /2fa/setup
+// {
+//   "phone": "0636299820",
+//   "method": "phone"
+// } => generate otp => store it in pending
+
+// POST /2fa/setup
+// {
+//   "method": "app"
+// } => generate totp + qrcode => store it in pending
+
+// VERIFICATION
+
+// POST /2fa/confirm
+// {
+//   "email": "user@example.com",
+//   "method": "email"
+// } => generate totp + qrcode => store it in pending

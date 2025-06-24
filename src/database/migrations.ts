@@ -55,15 +55,47 @@ const MIGRATIONS = [
 		id: 3,
 		name: 'create-two-factor-auth-table',
 		sql: `
-			CREATE TABLE IF NOT EXISTS two_factor_auth (
+			CREATE TABLE IF NOT EXISTS _2fa_methods (
 				id INTEGER PRIMARY KEY AUTOINCREMENT, -- 2FA ID
 				
-				secret TEXT DEFAULT NULL,
-				verified BOOLEAN DEFAULT FALSE,
+				method TEXT NOT NULL, -- email, sms, totp,
+				totp_secret TEXT,
+
+				user_id INTEGER NOT NULL,
+				FOREIGN KEY (user_id) REFERENCES users(id)
+			)
+		`
+	},
+	{
+		id: 4,
+		name: 'create-pending-2fa-table',
+		sql: `
+			CREATE TABLE IF NOT EXISTS pending_2fa (
+				id INTEGER PRIMARY KEY AUTOINCREMENT, -- 2FA ID
 				
-				type TEXT DEFAULT NULL,
-				enabled BOOLEAN DEFAULT FALSE,
+				method TEXT NOT NULL, -- email, sms, totp,
+				otp_temp_code INTEGER,
+				totp_temp_secret TEXT,
+
+				expires_at DATETIME,
+
+				user_id INTEGER NOT NULL,
+				FOREIGN KEY (user_id) REFERENCES users(id)
+			)
+		`
+	},
+	{
+		id: 5,
+		name: 'create-otps-table',
+		sql: `
+			CREATE TABLE IF NOT EXISTS otps (
+				id INTEGER PRIMARY KEY AUTOINCREMENT, -- OTP ID
 				
+				method TEXT NOT NULL, -- email, sms,
+				code INTEGER,
+
+				expires_at DATETIME,
+
 				user_id INTEGER NOT NULL,
 				FOREIGN KEY (user_id) REFERENCES users(id)
 			)

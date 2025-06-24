@@ -143,12 +143,26 @@ class AuthController {
 	}
 
 	async TwoFactorSetupEndpoint(request: FastifyRequest, reply: FastifyReply) {
-		// const { user_id } = request.body as { user_id: any };
-		const user_id = 1;
+		console.log(request.body);
+		const { user_id, method, contact } = request.body as { user_id: string, method: string, contact: string };
+
+		if (!method || !user_id || ((method === 'email' || method === 'sms') && !contact))
+			reply.status(400).send({ success: true, data: {} });
 
 		try {
-			const secrets = await this.twoFactorService.setupAuthenticatorApp(user_id);
-			reply.status(201).send({ success: true, data: secrets });
+			if (method === 'totp') {
+				const secrets = await this.twoFactorService.setupTOTP(parseInt(user_id));
+
+				reply.status(201).send({ success: true, data: secrets });
+			} else if (method === 'email' || method === 'sms') {
+				await this.twoFactorService.setupOTP(method, contact, parseInt(user_id));
+
+				reply.status(201).send({ success: true, data: {} });
+			} else {
+
+				reply.status(400).send({ success: false, data: {} });
+			}
+
 		} catch (err: any) {
 			const response = AuthErrorHandler.handle(err, true);
 
@@ -156,20 +170,48 @@ class AuthController {
 		}
 	}
 
-	async TwoFactorVerifyEndpoint(request: FastifyRequest, reply: FastifyReply) {
-		// const { user_id } = request.body as { user_id: any };
-		const user_id = 1;
-		const { code } = request.query as { code: string };
+	async TwoFactorConfirmEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		console.log(request.body);
+		const { user_id, method, code } = request.body as { user_id: string, method: string, code: string };
+
+		if (!method || !user_id || !code)
+			reply.status(400).send({ success: true, data: {} });
 
 		try {
-			await this.twoFactorService.verifyAuthenticatorApp(user_id, code);
-			reply.status(201).send({ success: true, data: {} });
+			if (method === 'totp') {
+				await this.twoFactorService.confirmTOTP(code, parseInt(user_id));
+
+				reply.status(201).send({ success: true, data: {} });
+			} else if (method === 'email' || method === 'sms') {
+				await this.twoFactorService.confirmOTP(parseInt(code), method, parseInt(user_id));
+
+				reply.status(201).send({ success: true, data: {} });
+			} else {
+
+				reply.status(400).send({ success: true, data: {} });
+			}
+
 		} catch (err: any) {
 			const response = AuthErrorHandler.handle(err, true);
 
 			reply.code(response.status).send(response.body);
 		}
 	}
+
+	// async TwoFactorVerifyEndpoint(request: FastifyRequest, reply: FastifyReply) {
+	// 	// const { user_id } = request.body as { user_id: any };
+	// 	const user_id = 1;
+	// 	const { code } = request.query as { code: string };
+
+	// 	try {
+	// 		await this.twoFactorService.verifyAuthenticatorApp(user_id, code);
+	// 		reply.status(201).send({ success: true, data: {} });
+	// 	} catch (err: any) {
+	// 		const response = AuthErrorHandler.handle(err, true);
+
+	// 		reply.code(response.status).send(response.body);
+	// 	}
+	// }
 }
 
 export default AuthController;

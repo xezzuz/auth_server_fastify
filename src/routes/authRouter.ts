@@ -12,8 +12,8 @@ async function authRouter(fastify: FastifyInstance) {
 	// fastify.delete('/revoke-all', authController.RevokeAllRoute.bind(authController));
 	fastify.get('/google/callback', authController.GoogleOAuthEndpoint.bind(authController));
 	fastify.get('/42/callback', authController.IntraOAuthEndpoint.bind(authController));
-	fastify.get('/2fa/setup', authController.TwoFactorSetupEndpoint.bind(authController));
-	fastify.get('/2fa/verify', authController.TwoFactorVerifyEndpoint.bind(authController));
+	fastify.post('/2fa/setup', authController.TwoFactorSetupEndpoint.bind(authController));
+	fastify.post('/2fa/verify', authController.TwoFactorConfirmEndpoint.bind(authController));
 }
 
 export default authRouter;
