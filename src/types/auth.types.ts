@@ -119,14 +119,30 @@ export class InternalServerError extends AuthError {
 
 // 2FA
 export class _2FANotFound extends AuthError {
-	constructor(message: string = '2FA not found', details: any = {}) {
-		super(message, 404, 'AUTH_2FA_NOT_FOUND', details);
+	constructor(method: string, message: string = '2FA not found', details: any = {}) {
+		message = `2FA via ${method} not found`;
+		super(message, 404, `AUTH_2FA_${method.toUpperCase()}_NOT_FOUND`, details);
+	}
+}
+
+export class _2FANotEnabled extends AuthError {
+	constructor(method: string, message: string = '2FA not enabled', details: any = {}) {
+		message = `2FA via ${method} not enabled`;
+		super(message, 404, `AUTH_2FA_${method.toUpperCase()}_NOT_ENABLED`, details);
+	}
+}
+
+export class _2FAAlreadyEnabled extends AuthError {
+	constructor(method: string, message: string = '2FA already enabled', details: any = {}) {
+		message = `2FA via ${method} already enabled`;
+		super(message, 404, `AUTH_2FA_${method.toUpperCase()}_ALREADY_ENABLED`, details);
 	}
 }
 
 export class _2FAInvalidCode extends AuthError {
-	constructor(message: string = '2FA code is not valid', details: any = {}) {
-		super(message, 400, 'AUTH_2FA_INVALID_CODE', details);
+	constructor(type: string, message: string = '2FA code is not valid', details: any = {}) {
+		message = `2FA ${type} is not valid`;
+		super(message, 400, `AUTH_2FA_${type.toUpperCase()}_INVALID_CODE`, details);
 	}
 }
 
