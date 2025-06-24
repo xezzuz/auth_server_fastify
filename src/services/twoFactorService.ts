@@ -14,17 +14,21 @@ class TwoFactorService {
 	async setupTOTP(user_id: number) : Promise<{ secret_base32: string, secret_qrcode_url: string }> {
 		const totp_temp_secret = this.generateTOTPSecret();
 
-		// if a totp enabled method is already setup => we need to remove it
+		// if a totp enabled method is already setup => return
 		// a user can't have an active method of the same type at the same time
+		const enabledTOTP = await this.twoFactorRepository.findEnabled2FAMethodByType('totp', user_id);
+		if (enabledTOTP)
+			throw new Error('TOTP already enabled!');
 
-		const pending2FA = await this.twoFactorRepository.createPendingTOTP2FAMethod(
+		// ?
+		const pendingTOTP = await this.twoFactorRepository.findPending2FAMethodByType('totp', user_id) || await this.twoFactorRepository.createPendingTOTP2FAMethod(
 			'totp',
 			totp_temp_secret.base32,
 			this.nowPlusMinutes(10),
 			user_id
 		);
 
-		if (!pending2FA)
+		if (!pendingTOTP)
 			throw new InternalServerError();
 
 		let QRCodeURL;
@@ -41,14 +45,21 @@ class TwoFactorService {
 	async setupOTP(method: string, contact: string, user_id: number) : Promise<void> {
 		const otp_temp_code = this.generateOTP();
 
-		const pending2FA = await this.twoFactorRepository.createPendingOTP2FAMethod(
+		// if a totp enabled method is already setup => return
+		// a user can't have an active method of the same type at the same time
+		const enabledOTP = await this.twoFactorRepository.findEnabled2FAMethodByType(method, user_id);
+		if (enabledOTP)
+			throw new Error(`OTP via ${method} already enabled!`);
+
+		// ?
+		const pendingOTP = await this.twoFactorRepository.findPending2FAMethodByType(method, user_id) || await this.twoFactorRepository.createPendingOTP2FAMethod(
 			method,
 			otp_temp_code,
 			this.nowPlusMinutes(5),
 			user_id
 		);
 
-		if (!pending2FA)
+		if (!pendingOTP)
 			throw new InternalServerError();
 
 		if (method === 'email')
@@ -64,7 +75,7 @@ class TwoFactorService {
 		if (!pendingTOTP2FA)
 			throw new Error('TOTP expired!');
 
-		if (!this.verifyTOTP(pendingTOTP2FA.totp_temp_secret, totp_code))
+		if (!this._verifyTOTP(pendingTOTP2FA.totp_temp_secret, totp_code))
 			throw new _2FAInvalidCode();
 
 		const newTOTP2FA = await this.twoFactorRepository.enablePending2FATOTPMethod(user_id);
@@ -81,7 +92,7 @@ class TwoFactorService {
 		if (!pendingOTP2FA)
 			throw new Error('OTP expired!');
 		
-		if (!this.verifyOTP(otp_code, pendingOTP2FA.otp_temp_code))
+		if (!this._verifyOTP(otp_code, pendingOTP2FA.otp_temp_code))
 			throw new _2FAInvalidCode();
 		
 		const newTOTP2FA = await this.twoFactorRepository.enablePending2FAOTPMethod(method, user_id);
@@ -91,13 +102,40 @@ class TwoFactorService {
 		console.log(`OTP by ${method} is verified, deleted from pending, added to active 2fa`);
 	}
 
+	async verifyTOTP(totp_code: number, user_id: number) {
+		const enabledTOTP = await this.twoFactorRepository.findEnabled2FAMethodByType('totp', user_id);
+		if (!enabledTOTP)
+			throw new Error('TOTP not enabled!');
+
+		return this._verifyTOTP(enabledTOTP.totp_secret, totp_code.toString());
+	}
+	
+	async verifyOTP(method: string, otp_code: number, user_id: number) {
+		const enabledOTP = await this.twoFactorRepository.findEnabled2FAMethodByType(method, user_id);
+		if (!enabledOTP)
+			throw new Error(`OTP via ${method} not enabled!`);
+		
+		const currentOTP = await this.twoFactorRepository.findOTPByType(method, user_id);
+		if (!currentOTP)
+			throw new Error(`OTP via ${method} not found!`);
+		if (this.nowInSeconds() > currentOTP.expires_at)
+			throw new Error(`OTP via ${method} expired!`); // delete it
+
+		console.log(`verify: ${currentOTP.code} | ${otp_code}`);
+		return this._verifyOTP(otp_code, currentOTP.code);
+	}
+
 	private generateTOTPSecret() : { base32: string, otpauth_url: string } {
 		const temp_secret = speakeasy.generateSecret();
 
 		return { base32: temp_secret.base32, otpauth_url: temp_secret.otpauth_url };
 	}
 
-	private verifyTOTP(secret_base32: string, code: string) : boolean {
+	private generateOTP() {
+		return ('' + Math.floor(100000 + Math.random() * 90000));
+	}
+
+	private _verifyTOTP(secret_base32: string, code: string) : boolean {
 		console.log(`verify: ${secret_base32} | ${code}`);
 		return speakeasy.totp.verify({
 			secret: secret_base32,
@@ -105,25 +143,26 @@ class TwoFactorService {
 			token: code
 		});
 	}
-
-	private verifyOTP(incoming_code: number, stored_code: number) {
+	
+	private _verifyOTP(incoming_code: number, stored_code: number) {
+		console.log(`verify: ${incoming_code} | ${stored_code}`);
 		return incoming_code === stored_code;
 	}
-
-	private generateOTP() {
-		return ('' + Math.floor(100000 + Math.random() * 90000));
-	}
-
-	private nowPlusMinutes(minutes: number) {
-		return Date.now() + minutes * 60000;
-	}
-
+	
 	private sendEmail(email: string, code: string) {
 		console.log(`Email sent to ${email} with code: ${code}`);
 	}
-
+	
 	private sendSMS(phone: string, code: string) {
 		console.log(`SMS sent to ${phone} with code: ${code}`);
+	}
+	
+	private nowPlusMinutes(minutes: number) {
+		return Math.floor((Date.now() / 1000) + minutes * 60);
+	}
+
+	private nowInSeconds() {
+		return Math.floor(Date.now() / 1000);
 	}
 }
 

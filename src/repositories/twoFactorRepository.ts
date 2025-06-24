@@ -55,6 +55,15 @@ class TwoFactorRepository {
 		return OTP;
 	}
 
+	async findOTPByType(type: string, user_id: number) : Promise<any> {
+		const OTP = await db.get(
+			`SELECT * FROM otps WHERE user_id = ? AND method = ?`,
+			[user_id, type]
+		);
+
+		return OTP;
+	}
+
 	async findAllOTPs(user_id: number) : Promise<any> {
 		const allOTPs = await db.all(
 			`SELECT * FROM otps WHERE user_id = ?`,
