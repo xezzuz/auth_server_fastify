@@ -1,8 +1,10 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import AuthController from "../controllers/authController";
+import UserController from "../controllers/userController";
 
 async function authRouter(fastify: FastifyInstance) {
 	const authController: AuthController = new AuthController();
+	const userController: UserController = new UserController();
 
 	// AUTH ROUTES
 	fastify.post('/register', authController.RegisterEndpoint.bind(authController));
@@ -15,6 +17,8 @@ async function authRouter(fastify: FastifyInstance) {
 	fastify.post('/2fa/setup', authController.TwoFactorSetupEndpoint.bind(authController));
 	fastify.post('/2fa/confirm', authController.TwoFactorConfirmEndpoint.bind(authController));
 	fastify.post('/2fa/verify', authController.TwoFactorVerifyEndpoint.bind(authController));
+	
+	fastify.get('/users/available', userController.UsernameEmailAvailable.bind(userController));
 }
 
 export default authRouter;
