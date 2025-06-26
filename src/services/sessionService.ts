@@ -1,5 +1,5 @@
 import AuthUtils from "../utils/auth/Auth";
-import { SessionFingerprint } from "../types";
+import { ISessionFingerprint } from "../types";
 import SessionRepository from "../repositories/sessionRepository";
 import { JWT_REFRESH_PAYLOAD } from "../utils/auth/Auth";
 import { SessionExpiredError, SessionRevokedError, SessionNotFoundError } from "../types/auth.types";
@@ -32,8 +32,8 @@ class SessionManager {
 		}
 	}
 
-	public async createSession(refreshToken: string, currentSessionFingerprint: SessionFingerprint) {
-		const { device_name, browser_version, ip_address }: SessionFingerprint = currentSessionFingerprint;
+	public async createSession(refreshToken: string, currentSessionFingerprint: ISessionFingerprint) {
+		const { device_name, browser_version, ip_address }: ISessionFingerprint = currentSessionFingerprint;
 		const { session_id, iat: created_at, sub: user_id }: JWT_REFRESH_PAYLOAD = this.authUtils.decodeJWT(refreshToken);
 		
 		const expires_at = Math.floor((Date.now() / 1000) + (60 * 60 * 24 * 30)); // 30d
@@ -49,8 +49,8 @@ class SessionManager {
 		);
 	}
 	
-	public async refreshSession(newRefreshToken: string, newSessionFingerprint: SessionFingerprint) {
-		const { device_name, browser_version, ip_address }: SessionFingerprint = newSessionFingerprint;
+	public async refreshSession(newRefreshToken: string, newSessionFingerprint: ISessionFingerprint) {
+		const { device_name, browser_version, ip_address }: ISessionFingerprint = newSessionFingerprint;
 		const { session_id, version, sub: user_id }: JWT_REFRESH_PAYLOAD = this.authUtils.decodeJWT(newRefreshToken);
 		
 		const isFound = await this.sessionRepository.findOne(session_id, user_id);
@@ -70,8 +70,8 @@ class SessionManager {
 		);
 	}
 	
-	public async validateSession(refreshToken: string, newSessionFingerprint: SessionFingerprint) {
-		const { device_name, browser_version, ip_address }: SessionFingerprint = newSessionFingerprint;
+	public async validateSession(refreshToken: string, newSessionFingerprint: ISessionFingerprint) {
+		const { device_name, browser_version, ip_address }: ISessionFingerprint = newSessionFingerprint;
 		const { session_id, version, sub: user_id }: JWT_REFRESH_PAYLOAD = this.authUtils.decodeJWT(refreshToken);
 
 		const isFound = await this.sessionRepository.findOne(session_id, user_id);

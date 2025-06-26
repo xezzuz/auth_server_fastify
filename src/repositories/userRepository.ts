@@ -1,30 +1,30 @@
 import { db } from "../database";
-import { CreateUserRequest, SQLCreateUser, User } from "../types";
+import { CreateUserRequest, ISQLCreateUser, User } from "../types";
 
 class UserRepository {
 
-	async create(userData: SQLCreateUser, auth_provider: string = 'local') : Promise<User> {
-		const { username, password, email, first_name, last_name, bio, avatar_url } = userData;
+	async create(data: ISQLCreateUser) : Promise<number> {
+		const { username, password, email, first_name, last_name, bio, avatar_url, auth_provider } = data;
 		
 		const runResult = await db.run(
 			`INSERT INTO users (username, password, email, first_name, last_name, avatar_url, auth_provider) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 			[username, password, email, first_name, last_name, avatar_url, auth_provider]
 		);
 
-		const createdUser = await db.get<User>(
-			`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?`,
-			[runResult.lastID]
-		);
+		// const createdUser = await db.get<User>(
+		// 	`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?`,
+		// 	[runResult.lastID]
+		// );
 
-		if (!createdUser)
-			throw new Error(`Error creating user <${username}>!`); // TODO
+		// if (!createdUser)
+		// 	throw new Error(`Error creating user <${username}>!`); // TODO
 
-		return createdUser;
+		return runResult.lastID;
 	}
 
 	async findById(id: number) : Promise<User | undefined> {
 		const getResult = await db.get<User>(
-			`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?`,
+			`SELECT id, username, email, password, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?`,
 			[id]
 		);
 
@@ -33,7 +33,7 @@ class UserRepository {
 
 	async findByUsername(username: string) : Promise<User | undefined> {
 		const getResult = await db.get<User>(
-			`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE username = ?`,
+			`SELECT id, username, email, password, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE username = ?`,
 			[username]
 		);
 
@@ -42,7 +42,7 @@ class UserRepository {
 
 	async findByEmail(email: string) : Promise<User | undefined> {
 		const getResult = await db.get<User>(
-			`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE email = ?`,
+			`SELECT id, username, email, password, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE email = ?`,
 			[email]
 		);
 

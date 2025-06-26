@@ -4,6 +4,7 @@ import authRouter from './routes/authRouter';
 import { db } from './database/index';
 import runMigrations from './database/migrations';
 import cors from '@fastify/cors';
+import userRouter from './routes/userRouter';
 
 // declare module 'fastify' {
 // 	interface FastifyInstance {
@@ -20,8 +21,7 @@ async function buildApp(): Promise<FastifyInstance> {
 
 	// REGISTER AUTH PLUGIN
 	await fastify.register(authRouter, { prefix: '/api/auth' });
-
-	// REGISTER TODO PLUGIN
+	await fastify.register(userRouter, { prefix: '/api/users' });
 
 	return fastify;
 }

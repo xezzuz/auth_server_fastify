@@ -1,5 +1,5 @@
 import { db } from "../database";
-import { SessionFingerprint } from "../types";
+import { ISessionFingerprint } from "../types";
 
 class SessionRepository {
 	constructor() {

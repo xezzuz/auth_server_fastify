@@ -1,6 +1,6 @@
 // import { db } from "../database";
 // import { JWT_REFRESH_PAYLOAD } from "../utils/auth/Auth";
-// import { SessionFingerprint } from "../types";
+// import { ISessionFingerprint } from "../types";
  
 // class AuthRepository {
 // 	constructor() {
@@ -17,7 +17,7 @@
 // 		return getResult;
 // 	}
 
-// 	async createRefreshToken(payload: JWT_REFRESH_PAYLOAD, fingerprint: SessionFingerprint) : Promise<{ lastID: number, changes: number }> {
+// 	async createRefreshToken(payload: JWT_REFRESH_PAYLOAD, fingerprint: ISessionFingerprint) : Promise<{ lastID: number, changes: number }> {
 // 		const max_age = Math.floor(Date.now() / 1000 + (60 * 60 * 24 * 30)); // 30d
 
 // 		const runResult = await db.run(

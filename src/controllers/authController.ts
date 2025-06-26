@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import AuthService, { AuthConfig } from "../services/authService";
-import { CreateUserRequest, ErrorResponse, LoginRequest, RegisterRequest } from "../types";
+import { CreateUserRequest, ErrorResponse, ILoginRequest, ILogoutRequest, IOAuthLoginRequest, IRegisterRequest } from "../types";
 import bcrypt from 'bcrypt';
 import AuthErrorHandler from "./authErrorHandler";
 import { AuthError, TokenRequiredError } from "../types/auth.types";
@@ -39,9 +39,9 @@ class AuthController {
 	// REGISTER (NO-AUTO-LOGIN): REGISTERS USER IN DB
 	async RegisterEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
-			const userData = request.body as RegisterRequest;
+			const data = request.body as IRegisterRequest;
 			
-			const createdUser = await this.authService.SignUp(userData);
+			const createdUser = await this.authService.SignUp(data);
 			
 			reply.code(201).send({ success: true, data: createdUser});
 		} catch (err: any) {
@@ -51,13 +51,13 @@ class AuthController {
 		}
 	}
 	
-	// LOGIN (NO-AUTO-LOGIN): GENERATES ACCESS / REFRESH TOKENS
+	// LOGIN: GENERATES ACCESS / REFRESH TOKENS
 	async LoginEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
-			const userData = request.body as LoginRequest;
+			const data = request.body as ILoginRequest;
 			const userAgent = request.headers["user-agent"] || '';
 			
-			const userAndTokens = await this.authService.LogIn(userData, userAgent, request.ip);
+			const userAndTokens = await this.authService.LogIn(data, userAgent, request.ip);
 
 			reply.code(200).send({ success: true, data: userAndTokens });
 		} catch (err: any) {
@@ -69,6 +69,7 @@ class AuthController {
 	async LogoutEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const userAgent = request.headers["user-agent"] || '';
+			const { access_token } = request.body as ILogoutRequest;
 			
 			await this.authService.LogOut(request.headers.authorization, userAgent, request.ip);
 			
@@ -80,7 +81,6 @@ class AuthController {
 	
 	// REFRESH: GENERATES ACCESS / REFRESH TOKENS
 	async RefreshEndpoint(request: FastifyRequest, reply: FastifyReply) {
-		console.log(request.headers["user-agent"]);
 		try {
 			const userAgent = request.headers["user-agent"] || '';
 			
@@ -92,31 +92,28 @@ class AuthController {
 		}
 	}
 	
-	async RevokeAllEndpoint(request: FastifyRequest, reply: FastifyReply) {
-		try {
-			interface temp  {
-				user_id: number
-			};
+	// async RevokeAllEndpoint(request: FastifyRequest, reply: FastifyReply) {
+	// 	try {
+	// 		interface temp  {
+	// 			user_id: number
+	// 		};
 
-			const { user_id } = request.body as temp;
+	// 		const { user_id } = request.body as temp;
 
-			throw new Error('Not implemented yet');
-			// await this.authService.logoutFromAllDevices(user_id);
-			// reply.code(200).send({ success: true, data: {} });
-		} catch (err: any) {
-			reply.code(400).send({ success: false, error: err.message});
-		}
-	}
+	// 		throw new Error('Not implemented yet');
+	// 		// await this.authService.logoutFromAllDevices(user_id);
+	// 		// reply.code(200).send({ success: true, data: {} });
+	// 	} catch (err: any) {
+	// 		reply.code(400).send({ success: false, error: err.message});
+	// 	}
+	// }
 
 	async GoogleOAuthEndpoint(request: FastifyRequest, reply: FastifyReply) {
-		const { code } = request.query as { code?: string };
+		const { code } = request.query as IOAuthLoginRequest;
 
 		const userAgent = request.headers["user-agent"] || '';
 
 		try {
-			if (!code)
-				throw new Error('Google OAuth Code is required');
-
 			const data = await this.authService.GoogleLogIn(code, userAgent, request.ip);
 			reply.redirect(`http://localhost:3000/login?access_token=${data.accessToken}&refresh_token=${data.refreshToken}`);
 			// reply.code(200).send({ success: true, data });
@@ -126,14 +123,11 @@ class AuthController {
 	}
 
 	async IntraOAuthEndpoint(request: FastifyRequest, reply: FastifyReply) {
-		const { code } = request.query as { code?: string };
+		const { code } = request.query as IOAuthLoginRequest;
 
 		const userAgent = request.headers["user-agent"] || '';
 
 		try {
-			if (!code)
-				throw new Error('Intra OAuth Code is required');
-
 			const data = await this.authService.IntraLogIn(code, userAgent, request.ip);
 			reply.redirect(`http://localhost:3000/login?access_token=${data.accessToken}&refresh_token=${data.refreshToken}`);
 			// reply.code(200).send({ success: true, data });

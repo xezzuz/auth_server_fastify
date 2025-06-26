@@ -100,6 +100,33 @@ const MIGRATIONS = [
 				FOREIGN KEY (user_id) REFERENCES users(id)
 			)
 		`
+	},
+	{
+		id: 6,
+		name: 'create-relations-table',
+		sql: `
+			CREATE TABLE IF NOT EXISTS relations (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+  
+				requester_user_id INTEGER NOT NULL, -- USER WHO DID THE FIRST ACTION
+				receiver_user_id INTEGER NOT NULL,  -- USER REQUESTED TO REPLY TO ACTION
+				
+				relation_status TEXT NOT NULL,    -- VALUES (PENDING, ACCEPTED, BLOCKED)
+				
+				updated_by_user_id INTEGER,         -- USER WHO PERFORMED LAST ACTION
+																							-- EX:
+																								-- ADD FRIEND => PENDING
+																								-- UNFRIEND   => DELETE
+																								-- BLOCK      => BLOCKED
+				
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				
+				FOREIGN KEY (requester_user_id) REFERENCES users(id), -- ON DELETE CASCADE?
+				FOREIGN KEY (receiver_user_id) REFERENCES users(id),   -- ON DELETE CASCADE?
+  				FOREIGN KEY (updated_by_user_id) REFERENCES users(id) -- ON DELETE CASCADE?
+			)
+		`
 	}
 ];
 

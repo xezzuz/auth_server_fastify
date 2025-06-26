@@ -1,11 +1,11 @@
 import UserRepository from "../repositories/userRepository";
 import jwt from 'jsonwebtoken'
-import { CreateUserRequest, LoginRequest, RegisterRequest, SQLCreateUser, User } from "../types";
+import { CreateUserRequest, ILoginRequest, IRegisterRequest, ISQLCreateUser, User } from "../types";
 import bcrypt from 'bcrypt';
 import AuthUtils, { JWT_TOKEN, JWT_REFRESH_PAYLOAD } from '../utils/auth/Auth'
 import { FormError, FormFieldMissing, InvalidCredentialsError, PasswordLengthError, SessionExpiredError, SessionNotFoundError, SessionRevokedError, TokenExpiredError, TokenInvalidError, TokenRequiredError, UserAlreadyExistsError, UserNotFoundError, UsernameLengthError, WeakPasswordError } from "../types/auth.types";
 import SessionManager, { SessionConfig } from "./sessionService";
-import { SessionFingerprint } from "../types";
+import { ISessionFingerprint } from "../types";
 import { UAParser } from 'ua-parser-js';
 import axios from "axios";
 import 'dotenv/config';
@@ -52,10 +52,10 @@ class AuthService {
 		this.authUtils = new AuthUtils();
 	}
 
-	async SignUp(userData: RegisterRequest) : Promise<{ user: Omit<User, 'password'> }> {
-		const { username, password, email } = userData;
+	async SignUp(data: IRegisterRequest) : Promise<number> { //Promise<{ user: Omit<User, 'password'> }>
+		const { first_name, last_name, email, username, password } = data;
 
-		this.validateUserInput(userData);
+		this.validateUserInput(data); // TODO
 
 		if (await this.userRepository.existsByUsername(username))
 			throw new UserAlreadyExistsError('Username');
@@ -64,27 +64,24 @@ class AuthService {
 
 		const hashedPassword = await bcrypt.hash(password!, this.authConfig.bcryptRounds);
 
-		const createdUser = await this.userRepository.create({
-			...userData,
+		const createdUserID = await this.userRepository.create({
+			...data,
 			password: hashedPassword,
 			auth_provider: 'local',
 			avatar_url: 'https://pbs.twimg.com/profile_images/1300555471468851202/xtUnFLEm_200x200.jpg'
 		});
 
-		const { password: _, ...userWithoutPassword } = createdUser;
-
-		return { user: userWithoutPassword};
+		return createdUserID;
 	}
 
-	async LogIn(userData: LoginRequest, userAgent: string, ip: string) : Promise<{ user: Omit<User, 'password'>, accessToken: JWT_TOKEN, refreshToken: JWT_TOKEN }> {
-		const { username, password } = userData;
+	async LogIn(data: ILoginRequest, userAgent: string, ip: string) : Promise<{ user: Omit<User, 'password'>, accessToken: JWT_TOKEN, refreshToken: JWT_TOKEN }> {
+		const { username, password } = data;
 		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
 
-		if (!username || !username.trim())
-			throw new FormFieldMissing('Username');
-		if (!password || !password.trim())
-			throw new FormFieldMissing('Password');
-
+		// if (!username || !username.trim())
+		// 	throw new FormFieldMissing('Username');
+		// if (!password || !password.trim())
+		// 	throw new FormFieldMissing('Password');
 		const existingUser = await this.userRepository.findByUsername(username);
 		const isValidPassword = await bcrypt.compare(password, existingUser ? existingUser.password : this.authConfig.bcryptDummyHash);
 		if (!existingUser || !isValidPassword)
@@ -115,14 +112,15 @@ class AuthService {
 			// verify token signature?
 			const decodedJWT = jwt.decode(id_token);
 
-			const userData: SQLCreateUser = this.GoogleOAuthTokenToData(decodedJWT);
+			const userData: ISQLCreateUser = this.GoogleOAuthTokenToData(decodedJWT);
 
 			let	  createdUser;
 			const usernameExists = await this.userRepository.existsByUsername(userData.username);
 			const emailExists = await this.userRepository.existsByEmail(userData.email);
 			const isRegistered = usernameExists || emailExists;
 			if (!isRegistered) {
-				createdUser = await this.userRepository.create(userData, 'Google');
+				const createdUserID = await this.userRepository.create(userData);
+				createdUser = await this.userRepository.findById(createdUserID);
 			} else {
 				createdUser = await this.userRepository.findByUsername(userData.username);
 			}
@@ -154,14 +152,15 @@ class AuthService {
 		try {
 			const { access_token } = await this.getIntraOAuthTokens(code);
 
-			const userData: SQLCreateUser = await this.IntraOAuthTokenToData(access_token);
+			const userData: ISQLCreateUser = await this.IntraOAuthTokenToData(access_token);
 
 			let	  createdUser;
 			const usernameExists = await this.userRepository.existsByUsername(userData.username);
 			const emailExists = await this.userRepository.existsByEmail(userData.email);
 			const isRegistered = usernameExists || emailExists;
 			if (!isRegistered) {
-				createdUser = await this.userRepository.create(userData, '42');
+				const createdUserID = await this.userRepository.create(userData);
+				createdUser = await this.userRepository.findById(createdUserID);
 			} else {
 				createdUser = await this.userRepository.findByUsername(userData.username);
 			}
@@ -259,19 +258,19 @@ class AuthService {
 	// 	return await this.authRepository.revokeAllRefreshTokens(user_id);
 	// }
 
-	private validateUserInput(userData: RegisterRequest) : void {
+	private validateUserInput(userData: IRegisterRequest) : void {
 		const { username, password, email, first_name, last_name } = userData;
 
-		if (!username || !username.trim())
-			throw new FormFieldMissing('Username');
-		if (!password || !password.trim())
-			throw new FormFieldMissing('Password');
-		if (!email || !email.trim())
-			throw new FormFieldMissing('Email');
-		if (!first_name || !first_name.trim())
-			throw new FormFieldMissing('First_name');
-		if (!last_name || !last_name.trim())
-			throw new FormFieldMissing('Last_name');
+		// if (!username || !username.trim())
+		// 	throw new FormFieldMissing('Username');
+		// if (!password || !password.trim())
+		// 	throw new FormFieldMissing('Password');
+		// if (!email || !email.trim())
+		// 	throw new FormFieldMissing('Email');
+		// if (!first_name || !first_name.trim())
+		// 	throw new FormFieldMissing('First_name');
+		// if (!last_name || !last_name.trim())
+		// 	throw new FormFieldMissing('Last_name');
 
 		// TODO
 			// ADD VALIDATION FOR OTHER FIELDS (IMPORT FROM FRONTEND)
@@ -296,7 +295,7 @@ class AuthService {
 		return bearerToken;
 	}
 
-	private getFingerprint(userAgent: string, ip: string) : SessionFingerprint {
+	private getFingerprint(userAgent: string, ip: string) : ISessionFingerprint {
 		const parser = new UAParser(userAgent);
 
 		const ua = parser.getResult();
@@ -309,7 +308,7 @@ class AuthService {
 		if (!browserVersion)
 			browserVersion = 'Unknown Browser';
 
-		const fingerprint: SessionFingerprint = {
+		const fingerprint: ISessionFingerprint = {
 			device_name: deviceName,
 			browser_version: browserVersion,
 			ip_address: ip
@@ -332,8 +331,8 @@ class AuthService {
 		return data;
 	}
 
-	private GoogleOAuthTokenToData(data: any) : SQLCreateUser {
-		const userData: SQLCreateUser = {
+	private GoogleOAuthTokenToData(data: any) : ISQLCreateUser {
+		const userData: ISQLCreateUser = {
 			email: data.email,
 			username: data.email.split('@')[0],
 			first_name: data.given_name || data.name.split(' ')[0] || 'Ismail',
@@ -361,10 +360,10 @@ class AuthService {
 		return data;
 	}
 
-	private async IntraOAuthTokenToData(access_token: string) : Promise<SQLCreateUser> {
+	private async IntraOAuthTokenToData(access_token: string) : Promise<ISQLCreateUser> {
 		const { data } = await axios.get(`https://api.intra.42.fr/v2/me?access_token=${access_token}`);
 
-		const userData: SQLCreateUser = {
+		const userData: ISQLCreateUser = {
 			email: data.email,
 			username: data.login,
 			first_name: data.first_name || data.usual_first_name.split(' ')[0] || data.displayname.split(' ')[0],

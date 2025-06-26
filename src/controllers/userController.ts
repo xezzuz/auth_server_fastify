@@ -35,19 +35,6 @@ class UserController {
 			reply.status(500).send({ success: false, data: {} })
 		}
 	}
-
-	// async EmailAvailable(request: FastifyRequest, reply: FastifyReply) {
-	// 	try {
-	// 		const { email } = request.body as { email: string };
-
-	// 		const available = await this.userRepository.existsByEmail(email);
-	// 		if (available) reply.status(200);
-	// 		else reply.status(404);
-
-	// 	} catch (err: any) {
-	// 		reply.status(500).send({ success: false, data: {} })
-	// 	}
-	// }
 }
 
 export default UserController;
