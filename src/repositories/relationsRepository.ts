@@ -117,7 +117,7 @@ class RelationsRepository {
 	}
 
 	// RELATION BETWEEN TWO USERS (BI-DIRECTION)
-	async findRelationStatusByUsers(user_id_a: number, user_id_b: number) {
+	async findRelationStatusByUsers(user_id_a: number, user_id_b: number) : Promise<string> {
 		const relationStatus = await db.get(`
 			SELECT relation_status
 				FROM relations

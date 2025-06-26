@@ -222,6 +222,7 @@ class AuthController {
 			reply.code(response.status).send(response.body);
 		}
 	}
+	// disable endpoint
 }
 
 export default AuthController;

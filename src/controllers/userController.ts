@@ -1,6 +1,7 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import UserService from "../services/userService";
 import UserRepository from "../repositories/userRepository";
+import { IProfileRequest } from "../types";
 
 class UserController {
 	private userService: UserService;
@@ -31,6 +32,23 @@ class UserController {
 
 			reply.status(isTaken ? 404 : 200).send({ success: true, available: !isTaken });
 
+		} catch (err: any) {
+			reply.status(500).send({ success: false, data: {} })
+		}
+	}
+	
+	async UserProfileEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		try {
+			const { username } = request.params as IProfileRequest;
+			const user_id = request.user?.sub;
+
+			const data = await this.userService.UserProfile(user_id!, username);
+
+			if (!data)
+				reply.status(404).send({ success: false, error: {} });
+			else
+				reply.status(200).send({ success: true, data });
+			
 		} catch (err: any) {
 			reply.status(500).send({ success: false, data: {} })
 		}

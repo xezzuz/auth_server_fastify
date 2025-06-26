@@ -3,14 +3,15 @@ import AuthController from "../controllers/authController";
 import UserController from "../controllers/userController";
 import RelationsController from "../controllers/relationsContoller";
 import RelationsRepository from "../repositories/relationsRepository";
+import { userProfileSchema } from "../schemas/users.schema";
 
 async function userRouter(fastify: FastifyInstance) {
 	const userController: UserController = new UserController();
 	const relationsController: RelationsController = new RelationsController();
 	const relRepo: RelationsRepository = new RelationsRepository();
 
-	// USER ROUTES
-	fastify.get('/users/available', userController.UsernameEmailAvailable.bind(userController));
+	// USER ROUTES /users
+	fastify.get('/available', userController.UsernameEmailAvailable.bind(userController));
 	fastify.post('/relations/request', relationsController.sendFriendRequest.bind(relationsController));
 	fastify.delete('/relations/request', relationsController.cancelFriendRequest.bind(relationsController));
 	fastify.post('/relations/accept', relationsController.acceptFriendRequest.bind(relationsController));
@@ -20,6 +21,18 @@ async function userRouter(fastify: FastifyInstance) {
 
 	fastify.delete('/relations', async () => {
 		await relRepo.clean();
+	});
+
+	// fastify.get('/profile/me', {
+	// 	schema: userProfileSchema,
+	// 	preHandler: fastify.authenticate,
+	// 	handler: userController.UserProfile.bind(userController)
+	// });
+
+	fastify.get('/profile/:username', {
+		schema: userProfileSchema,
+		preHandler: fastify.authenticate,
+		handler: userController.UserProfileEndpoint.bind(userController)
 	});
 
 	// USER MANAGEMENT (admin or self-service)

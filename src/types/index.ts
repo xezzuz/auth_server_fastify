@@ -70,6 +70,10 @@ export interface I2FADisableRequest {
 	password: string
 }
 
+export interface IProfileRequest {
+	username: string
+}
+
 // export interface RefreshRequest {
 // 	username: string,
 // 	password: string
