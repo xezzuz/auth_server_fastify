@@ -45,22 +45,26 @@ async function authRouter(fastify: FastifyInstance) {
 	// 2FA (OTP / TOTP)
 	fastify.post('/2fa/setup', {
 		schema: auth2FASetupSchema,
+		preHandler: fastify.requireAuth,
 		handler: authController.TwoFactorSetupEndpoint.bind(authController)
 	});
 	fastify.post('/2fa/confirm', {
 		schema: auth2FAConfirmSchema,
+		preHandler: fastify.requireAuth,
 		handler: authController.TwoFactorConfirmEndpoint.bind(authController)
 	});
 	fastify.post('/2fa/verify', {
 		schema: auth2FAVerifySchema,
+		preHandler: fastify.requireAuth,
 		handler: authController.TwoFactorVerifyEndpoint.bind(authController)
 	});
 
 	fastify.post('/2fa/disable', {
 		schema: auth2FADisableSchema,
+		preHandler: fastify.requireAuth,
 		handler: authController.TwoFactorVerifyEndpoint.bind(authController)
 	});
-	
+
 	// fastify.delete('/revoke-all', authController.RevokeAllRoute.bind(authController));
 
 	// SESSION / DEVICE MANAGEMENT

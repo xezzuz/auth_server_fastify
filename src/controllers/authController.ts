@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import AuthService, { AuthConfig } from "../services/authService";
-import { CreateUserRequest, ErrorResponse, ILoginRequest, ILogoutRequest, IOAuthLoginRequest, IRegisterRequest } from "../types";
+import { CreateUserRequest, ErrorResponse, I2FAConfirmRequest, I2FASetupRequest, ILoginRequest, ILogoutRequest, IOAuthLoginRequest, IRegisterRequest } from "../types";
 import bcrypt from 'bcrypt';
 import AuthErrorHandler from "./authErrorHandler";
 import { AuthError, TokenRequiredError } from "../types/auth.types";
@@ -138,18 +138,19 @@ class AuthController {
 
 	async TwoFactorSetupEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		console.log(request.body);
-		const { user_id, method, contact } = request.body as { user_id: string, method: string, contact: string };
+		const { method, contact } = request.body as I2FASetupRequest;
+		const user_id = request.user?.sub;
 
 		if (!method || !user_id || ((method === 'email' || method === 'sms') && !contact))
 			reply.status(400).send({ success: true, data: {} });
 
 		try {
 			if (method === 'totp') {
-				const secrets = await this.twoFactorService.setupTOTP(parseInt(user_id));
+				const secrets = await this.twoFactorService.setupTOTP(user_id!);
 
 				reply.status(201).send({ success: true, data: secrets });
 			} else if (method === 'email' || method === 'sms') {
-				await this.twoFactorService.setupOTP(method, contact, parseInt(user_id));
+				await this.twoFactorService.setupOTP(method, contact, user_id!);
 
 				reply.status(201).send({ success: true, data: {} });
 			} else {
@@ -166,18 +167,19 @@ class AuthController {
 
 	async TwoFactorConfirmEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		console.log(request.body);
-		const { user_id, method, code } = request.body as { user_id: string, method: string, code: string };
+		const { method, code } = request.body as I2FAConfirmRequest;
+		const user_id = request.user?.sub;
 
 		if (!method || !user_id || !code)
 			reply.status(400).send({ success: true, data: {} });
 
 		try {
 			if (method === 'totp') {
-				await this.twoFactorService.confirmTOTP(code, parseInt(user_id));
+				await this.twoFactorService.confirmTOTP(code, user_id!);
 
 				reply.status(201).send({ success: true, data: {} });
 			} else if (method === 'email' || method === 'sms') {
-				await this.twoFactorService.confirmOTP(code, method, parseInt(user_id));
+				await this.twoFactorService.confirmOTP(code, method, user_id!);
 
 				reply.status(201).send({ success: true, data: {} });
 			} else {
@@ -194,18 +196,19 @@ class AuthController {
 
 	async TwoFactorVerifyEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		console.log(request.body);
-		const { user_id, method, code } = request.body as { user_id: string, method: string, code: string };
+		const { method, code } = request.body as I2FAConfirmRequest;
+		const user_id = request.user?.sub;
 
 		if (!method || !user_id || !code)
 			reply.status(400).send({ success: true, data: {} });
 
 		try {
 			if (method === 'totp') {
-				await this.twoFactorService.verifyTOTP(code, parseInt(user_id));
+				await this.twoFactorService.verifyTOTP(code, user_id!);
 
 				reply.status(201).send({ success: true, data: {} });
 			} else if (method === 'email' || method === 'sms') {
-				await this.twoFactorService.verifyOTP(method, code, parseInt(user_id));
+				await this.twoFactorService.verifyOTP(method, code, user_id!);
 
 				reply.status(201).send({ success: true, data: {} });
 			} else {

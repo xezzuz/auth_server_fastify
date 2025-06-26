@@ -62,7 +62,7 @@ export interface I2FASetupRequest {
 
 export interface I2FAConfirmRequest {
 	method: string,
-	contact: string
+	code: string
 }
 
 export interface I2FADisableRequest {
