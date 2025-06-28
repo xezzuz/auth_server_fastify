@@ -17,7 +17,7 @@ async function buildApp(): Promise<FastifyInstance> {
 
 	// REGISTER DATABASE PLUGIN
 	// fastify.register(SQLitePlugin);
-	await fastify.register(cors, { origin: true });
+	await fastify.register(cors, { origin: true, credentials: true });
 
 	// REGISTER AUTH PLUGIN
 	await fastify.register(authRouter, { prefix: '/api/auth' });

@@ -28,6 +28,7 @@ class UserRepository {
 			[id]
 		);
 
+		console.log(getResult);
 		return getResult;
 	}
 

@@ -188,8 +188,9 @@ class AuthService {
 		}
 	}
 
-	async LogOut(authHeader: string | undefined, userAgent: string, ip: string) : Promise<void> {
-		const refreshToken = this.getBearerToken(authHeader);
+	async LogOut(refreshToken: string, userAgent: string, ip: string) : Promise<void> {
+		// const refreshToken = this.getBearerToken(authHeader);
+		console.log('refreshToken', refreshToken);
 		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
 
 		let payload: JWT_REFRESH_PAYLOAD;
@@ -216,8 +217,8 @@ class AuthService {
 		);
 	}
 
-	async Refresh(authHeader: string | undefined, userAgent: string, ip: string) : Promise<{ newAccessToken: JWT_TOKEN, newRefreshToken: JWT_TOKEN }> {
-		const refreshToken = this.getBearerToken(authHeader);
+	async Refresh(refreshToken: string, userAgent: string, ip: string) : Promise<{ newAccessToken: JWT_TOKEN, newRefreshToken: JWT_TOKEN }> {
+		// const refreshToken = this.getBearerToken(authHeader);
 		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
 		
 		let payload: JWT_REFRESH_PAYLOAD;

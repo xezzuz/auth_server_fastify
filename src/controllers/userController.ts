@@ -53,6 +53,23 @@ class UserController {
 			reply.status(500).send({ success: false, data: {} })
 		}
 	}
+
+	async Me(request: FastifyRequest, reply: FastifyReply) {
+		console.log('request auth injected: ', request.user);
+		try {
+			const user_id = request.user?.sub;
+
+			const data = await this.userService.MeProfile(user_id!);
+
+			if (!data)
+				reply.status(404).send({ success: false, error: {} });
+			else
+				reply.status(200).send({ success: true, data });
+			
+		} catch (err: any) {
+			reply.status(500).send({ success: false, data: {} })
+		}
+	}
 }
 
 export default UserController;

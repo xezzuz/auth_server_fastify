@@ -21,14 +21,14 @@ const authLoginBody = {
 	additionalProperties: false
 };
 
-const authLogoutBody = {
-	type: 'object',
-	properties: {
-		access_token: { type: 'string' } // access token to blacklist
-	},
-	required: ['access_token'],
-	additionalProperties: false
-}
+// const authLogoutBody = {
+// 	type: 'object',
+// 	properties: {
+// 		access_token: { type: 'string' } // access token to blacklist
+// 	},
+// 	required: ['access_token'],
+// 	additionalProperties: false
+// }
 
 const authBearerHeader = {
 	type: 'object',
@@ -82,12 +82,11 @@ export const authLoginSchema = {
 };
 
 export const authLogoutSchema = {
-	headers: authBearerHeader,
-	body: authLogoutBody
+	headers: authBearerHeader
 }
 
 export const authRefreshSchema = {
-	headers: authBearerHeader
+	// headers: authBearerHeader
 }
 
 export const authOAuthSchema = {

@@ -57,9 +57,16 @@ class AuthController {
 			const data = request.body as ILoginRequest;
 			const userAgent = request.headers["user-agent"] || '';
 			
-			const userAndTokens = await this.authService.LogIn(data, userAgent, request.ip);
+			const { user, refreshToken, accessToken } = await this.authService.LogIn(data, userAgent, request.ip);
 
-			reply.code(200).send({ success: true, data: userAndTokens });
+			reply.code(200).setCookie(
+				'refreshToken', refreshToken, {
+					path: '/',
+					httpOnly: true,
+					secure: false,
+					sameSite: 'lax'
+				}
+			).send({ success: true, data: { user, accessToken } });
 		} catch (err: any) {
 			reply.code(401).send({ success: false, error: err.message });
 		}
@@ -69,11 +76,22 @@ class AuthController {
 	async LogoutEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const userAgent = request.headers["user-agent"] || '';
-			const { access_token } = request.body as ILogoutRequest;
+			// const { access_token } = request.body as ILogoutRequest;
+			const refresh_token = request.cookies?.['refreshToken'];
+			console.log('cookies: ', request.cookies);
 			
-			await this.authService.LogOut(request.headers.authorization, userAgent, request.ip);
+			// await this.authService.LogOut(request.headers.authorization, userAgent, request.ip);
+			await this.authService.LogOut(refresh_token!, userAgent, request.ip);
 			
-			reply.code(200).send({ success: true, data: {} });
+			reply.code(200).setCookie(
+				'refreshToken', '', {
+					path: '/',
+					httpOnly: true,
+					secure: false,
+					sameSite: 'lax',
+					expires: new Date(0)
+				}
+			).send({ success: true, data: {} });
 		} catch (err: any) {
 			reply.code(400).send({ success: false, error: err.message});
 		}
@@ -83,10 +101,19 @@ class AuthController {
 	async RefreshEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const userAgent = request.headers["user-agent"] || '';
+			const oldRefreshToken = request.cookies?.['refreshToken'];
 			
-			const { newAccessToken: accessToken, newRefreshToken: refreshToken } = await this.authService.Refresh(request.headers.authorization, userAgent, request.ip);
+			const { newAccessToken: accessToken, newRefreshToken: refreshToken } = await this.authService.Refresh(oldRefreshToken!, userAgent, request.ip);
 			
-			reply.code(200).send({ success: true, data: { accessToken, refreshToken } });
+			reply.code(200).setCookie(
+				'refreshToken', refreshToken, {
+					path: '/',
+					httpOnly: true,
+					secure: false,
+					sameSite: 'lax'
+				}
+			).send({ success: true, data: { accessToken } });
+			// reply.code(200).send({ success: true, data: { accessToken, refreshToken } });
 		} catch (err: any) {
 			reply.code(400).send({ success: false, error: err.message});
 		}

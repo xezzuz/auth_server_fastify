@@ -90,6 +90,9 @@ declare module 'fastify' {
 	}
 	interface FastifyRequest {
 		user: JWT_ACCESS_PAYLOAD | null,
+		// cookies: {
+		// 	[cookieName: string]: string
+		// }
 		// id: string
 	}
 }

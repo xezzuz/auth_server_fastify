@@ -4,11 +4,16 @@ import UserController from "../controllers/userController";
 import RelationsController from "../controllers/relationsContoller";
 import RelationsRepository from "../repositories/relationsRepository";
 import { userProfileSchema } from "../schemas/users.schema";
+import Authenticate from "../middleware/Authenticate";
 
 async function userRouter(fastify: FastifyInstance) {
 	const userController: UserController = new UserController();
 	const relationsController: RelationsController = new RelationsController();
 	const relRepo: RelationsRepository = new RelationsRepository();
+
+	fastify.decorate('authenticate', Authenticate); // auth middleware for protected routes
+	fastify.decorate('requireAuth', { preHandler: fastify.authenticate }); // preHandler hook
+	fastify.decorateRequest('user', null);
 
 	// USER ROUTES /users
 	fastify.get('/available', userController.UsernameEmailAvailable.bind(userController));
@@ -33,6 +38,11 @@ async function userRouter(fastify: FastifyInstance) {
 		schema: userProfileSchema,
 		preHandler: fastify.authenticate,
 		handler: userController.UserProfileEndpoint.bind(userController)
+	});
+
+	fastify.get('/me', {
+		preHandler: fastify.authenticate,
+		handler: userController.Me.bind(userController)
 	});
 
 	// USER MANAGEMENT (admin or self-service)

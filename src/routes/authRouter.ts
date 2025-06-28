@@ -3,12 +3,15 @@ import AuthController from "../controllers/authController";
 import Authenticate from "../middleware/Authenticate";
 import { auth2FAConfirmSchema, auth2FADisableSchema, auth2FASetupSchema, auth2FAVerifySchema, authLoginSchema, authLogoutSchema, authOAuthSchema, authRefreshSchema, authRegisterSchema } from "../schemas/auth.schema";
 
+import cookie from '@fastify/cookie';
+
 async function authRouter(fastify: FastifyInstance) {
 	const authController: AuthController = new AuthController();
 
 	fastify.decorate('authenticate', Authenticate); // auth middleware for protected routes
 	fastify.decorate('requireAuth', { preHandler: fastify.authenticate }); // preHandler hook
 	fastify.decorateRequest('user', null);
+	fastify.register(cookie);
 
 	// AUTH ROUTES
 	fastify.post('/register', {
