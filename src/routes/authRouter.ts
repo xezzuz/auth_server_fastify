@@ -4,6 +4,7 @@ import Authenticate from "../middleware/Authenticate";
 import { auth2FAConfirmSchema, auth2FADisableSchema, auth2FASetupSchema, auth2FAVerifySchema, authLoginSchema, authLogoutSchema, authOAuthSchema, authRefreshSchema, authRegisterSchema, authResetPasswordSchema, authResetPasswordUpdateSchema, authResetPasswordVerifySchema } from "../schemas/auth.schema";
 
 import cookie from '@fastify/cookie';
+import { db } from "../database";
 
 async function authRouter(fastify: FastifyInstance) {
 	const authController: AuthController = new AuthController();
@@ -95,6 +96,21 @@ async function authRouter(fastify: FastifyInstance) {
 	// EMAIL VERIFICATION (optional)
 	// POST /auth/verify-email — Trigger email verification
 	// GET /auth/verify-email/:token — Confirm email with token
+	fastify.get('/db', async () => {
+		const getResult = await db.get(`SELECT * FROM users WHERE username = ?`, ['xezzuz']);
+		const getResult_2 = await db.get(`SELECT * FROM users WHERE username = ?`, ['doesntexist']);
+
+		const all_1 = await db.all(`SELECT * FROM users WHERE username = ?`, ['xezzuz']);
+		const all_2 = await db.all(`SELECT * FROM users WHERE username = ?`, ['doesntexist']);
+		const all_3 = await db.all(`SELECT * FROM users`);
+
+		console.log('getting something that exists: ', getResult);
+		console.log('getting something that doesnt exists: ', getResult_2);
+
+		console.log('getting all that exists (one match): ', all_1);
+		console.log('getting all that doesnt exists (no match): ', all_2);
+		console.log('getting all that exists (multiple matches): ', all_3);
+	});
 }
 
 export default authRouter;

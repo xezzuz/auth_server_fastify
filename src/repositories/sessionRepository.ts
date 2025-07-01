@@ -1,5 +1,6 @@
 import { db } from "../database";
 import { ISessionFingerprint } from "../types";
+import { InternalServerError } from "../types/auth.types";
 
 class SessionRepository {
 	constructor() {
@@ -7,30 +8,42 @@ class SessionRepository {
 	}
 
 	async findOne(session_id: string, user_id: number) {
-		const getResult = await db.get(
-			`SELECT * FROM refresh_tokens WHERE session_id = ? AND user_id = ?`,
-			[session_id, user_id]
-		);
-
-		return getResult;
+		try {
+			const getResult = await db.get(
+				`SELECT * FROM refresh_tokens WHERE session_id = ? AND user_id = ?`,
+				[session_id, user_id]
+			);
+			return getResult ?? null;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
 	async findAllActive(user_id: number) {
-		const allResult = await db.all(
-			`SELECT * FROM refresh_tokens WHERE is_revoked = false AND user_id = ?`,
-			[user_id]
-		);
-
-		return allResult;
+		try {
+			const allResult = await db.all(
+				`SELECT * FROM refresh_tokens WHERE is_revoked = false AND user_id = ?`,
+				[user_id]
+			);
+			return allResult;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
 	async findAllRevoked(user_id: number) {
-		const allResult = await db.all(
-			`SELECT * FROM refresh_tokens WHERE is_revoked = true AND user_id = ?`,
-			[user_id]
-		);
-
-		return allResult;
+		try {
+			const allResult = await db.all(
+				`SELECT * FROM refresh_tokens WHERE is_revoked = true AND user_id = ?`,
+				[user_id]
+			);
+			return allResult;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
 	async create(
@@ -41,14 +54,18 @@ class SessionRepository {
 			created_at: number,
 			expires_at: number,
 			user_id: number
-		) : Promise<{ lastID: number, changes: number }> {
+		) : Promise<number> {
 		
-		const runResult = await db.run(
-			`INSERT INTO refresh_tokens (session_id, created_at, expires_at, device_name, browser_version, ip_address, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			[session_id, created_at, expires_at, device_name, browser_version, ip_address, user_id]
-		);
-
-		return { lastID: runResult.lastID, changes: runResult.changes };
+		try {
+			const runResult = await db.run(
+				`INSERT INTO refresh_tokens (session_id, created_at, expires_at, device_name, browser_version, ip_address, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+				[session_id, created_at, expires_at, device_name, browser_version, ip_address, user_id]
+			);
+			return runResult.lastID;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
 	async update(
@@ -65,7 +82,7 @@ class SessionRepository {
 			expires_at: number,
 		}>
 		
-	) : Promise<{ lastID: number, changes: number }> {
+	) : Promise<boolean> {
 		const keys: string[] = [];
 		const values: any[] = [];
 
@@ -103,7 +120,7 @@ class SessionRepository {
 		}
 
 		if (keys.length === 0) {
-			return { lastID: 0, changes: 0 };
+			return false;
 		}
 
 		keys.push(`updated_at = CURRENT_TIMESTAMP`);
@@ -115,7 +132,7 @@ class SessionRepository {
 			values
 		);
 
-		return { lastID: runResult.lastID, changes: runResult.changes };
+		return runResult.changes > 0;
 	}
 
 	async updateAll(
@@ -131,7 +148,7 @@ class SessionRepository {
 			expires_at: number,
 		}>
 		
-	) : Promise<{ lastID: number, changes: number }> {
+	) : Promise<boolean> {
 		const keys: string[] = [];
 		const values: any[] = [];
 
@@ -169,7 +186,7 @@ class SessionRepository {
 		}
 
 		if (keys.length === 0) {
-			return { lastID: 0, changes: 0 };
+			return false;
 		}
 
 		keys.push(`updated_at = CURRENT_TIMESTAMP`);
@@ -180,7 +197,7 @@ class SessionRepository {
 			values
 		);
 
-		return { lastID: runResult.lastID, changes: runResult.changes };
+		return runResult.changes > 0;
 	}
 
 	// async revokeSession(

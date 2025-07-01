@@ -15,13 +15,13 @@ class MatchesRepository {
 		const finishedVal = finished ?? new Date().toISOString();
 
 		try {
-			const { lastID } = await db.run(
+			const runResult = await db.run(
 				`INSERT INTO matches 
 				(player_home_score, player_away_score, game_type, started, finished, player_home_id, player_away_id) 
 				VALUES (?, ?, ?, ?, ?, ?, ?)`,
 				[player_home_score, player_away_score, game_type, startedVal, finishedVal, player_home_id, player_away_id]
 			);
-			return lastID;
+			return runResult.lastID;
 		} catch (err: any) {
 			console.error('SQLite Error: ', err);
 			throw new InternalServerError();

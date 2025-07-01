@@ -8,11 +8,11 @@ class UserRepository {
 		const { username, password, email, first_name, last_name, bio, avatar_url, auth_provider } = data;
 		
 		try {
-			const { lastID } = await db.run(
+			const runResult = await db.run(
 				`INSERT INTO users (username, password, email, first_name, last_name, avatar_url, auth_provider) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 				[username, password, email, first_name, last_name, avatar_url, auth_provider]
 			);
-			return lastID;
+			return runResult.lastID;
 		} catch (err: any) {
 			console.error('SQLite Error: ', err);
 			throw new InternalServerError();
@@ -21,11 +21,11 @@ class UserRepository {
 
 	async findById(id: number) : Promise<User | null> {
 		try {
-			const user = await db.get<User>(
+			const getResult = await db.get<User>(
 				`SELECT * FROM users WHERE id = ?`,
 				[id]
 			);
-			return user ?? null;
+			return getResult ?? null;
 		} catch (err: any) {
 			console.error('SQLite Error: ', err);
 			throw new InternalServerError();
@@ -34,11 +34,11 @@ class UserRepository {
 
 	async findByUsername(username: string) : Promise<User | null> {
 		try {
-			const user = await db.get<User>(
+			const getResult = await db.get<User>(
 				`SELECT * FROM users WHERE username = ?`,
 				[username]
 			);
-			return user ?? null;
+			return getResult ?? null;
 		} catch (err: any) {
 			console.error('SQLite Error: ', err);
 			throw new InternalServerError();
@@ -47,11 +47,11 @@ class UserRepository {
 
 	async findByEmail(email: string) : Promise<User | null> {
 		try {
-			const user = await db.get<User>(
+			const getResult = await db.get<User>(
 				`SELECT * FROM users WHERE email = ?`,
 				[email]
 			);
-			return user ?? null;
+			return getResult ?? null;
 		} catch (err: any) {
 			console.error('SQLite Error: ', err);
 			throw new InternalServerError();
@@ -86,11 +86,11 @@ class UserRepository {
 		values.push(id);
 
 		try {
-			const { changes } = await db.run(
+			const runResult = await db.run(
 				`UPDATE users SET ${keys.join(', ')} WHERE id = ?`,
 				values
 			);
-			return changes > 0;
+			return runResult.changes > 0;
 		} catch (err: any) {
 			console.error('SQLite Error: ', err);
 			throw new InternalServerError();
@@ -99,11 +99,11 @@ class UserRepository {
 
 	async delete(id: number) : Promise<boolean> {
 		try {
-			const { changes } = await db.run(
+			const runResult = await db.run(
 				`DELETE FROM users WHERE id = ?`,
 				[id]
 			);
-			return changes > 0;
+			return runResult.changes > 0;
 		} catch (err: any) {
 			console.error('SQLite Error: ', err);
 			throw new InternalServerError();
