@@ -3,7 +3,7 @@ import AuthController from "../controllers/authController";
 import UserController from "../controllers/userController";
 import RelationsController from "../controllers/relationsContoller";
 import RelationsRepository from "../repositories/relationsRepository";
-import { userProfileSchema } from "../schemas/users.schema";
+import { relationsRequestSchema, userProfileSchema, userUpdateSchema } from "../schemas/users.schema";
 import Authenticate from "../middleware/Authenticate";
 
 async function userRouter(fastify: FastifyInstance) {
@@ -17,33 +17,79 @@ async function userRouter(fastify: FastifyInstance) {
 
 	// USER ROUTES /users
 	fastify.get('/available', userController.UsernameEmailAvailable.bind(userController));
-	fastify.post('/relations/request', relationsController.sendFriendRequest.bind(relationsController));
-	fastify.delete('/relations/request', relationsController.cancelFriendRequest.bind(relationsController));
-	fastify.post('/relations/accept', relationsController.acceptFriendRequest.bind(relationsController));
-	fastify.post('/relations/block', relationsController.blockUser.bind(relationsController));
-	fastify.delete('/relations/block', relationsController.unblockUser.bind(relationsController));
-	fastify.delete('/relations/unfriend', relationsController.unfriend.bind(relationsController));
+
+	// POST		/relations/:userID/request - SEND FRIEND REQUEST
+	fastify.post('/relations/:user_id/request', {
+		preHandler: fastify.authenticate,
+		schema: relationsRequestSchema,
+		handler: relationsController.sendFriendRequest.bind(relationsController)
+	});
+	// DELETE	/relations/:userID/request - CANCEL FRIEND REQUEST
+	fastify.delete('/relations/:user_id/request', {
+		preHandler: fastify.authenticate,
+		schema: relationsRequestSchema,
+		handler: relationsController.cancelFriendRequest.bind(relationsController)
+	});
+	// PUT		/relations/:userID/request - ACCEPT FRIEND REQUEST
+	fastify.put('/relations/:user_id/request', {
+		preHandler: fastify.authenticate,
+		schema: relationsRequestSchema,
+		handler: relationsController.acceptFriendRequest.bind(relationsController)
+	});
+
+	// PUT		/relations/:userID/unfriend - UNFRIEND
+	fastify.put('/relations/:user_id/unfriend', {
+		preHandler: fastify.authenticate,
+		schema: relationsRequestSchema,
+		handler: relationsController.unfriend.bind(relationsController)
+	});
+
+	// PUT		/relations/:userID/block - BLOCK
+	fastify.put('/relations/:user_id/block', {
+		preHandler: fastify.authenticate,
+		schema: relationsRequestSchema,
+		handler: relationsController.blockUser.bind(relationsController)
+	});
+	// PUT		/relations/:userID/unblock - UNBLOCK
+	fastify.put('/relations/:user_id/block', {
+		preHandler: fastify.authenticate,
+		schema: relationsRequestSchema,
+		handler: relationsController.unblockUser.bind(relationsController)
+	});
+
 
 	fastify.delete('/relations', async () => {
 		await relRepo.clean();
 	});
 
-	// fastify.get('/profile/me', {
-	// 	schema: userProfileSchema,
-	// 	preHandler: fastify.authenticate,
-	// 	handler: userController.UserProfile.bind(userController)
-	// });
+	// USER MANAGEMENT
 
-	fastify.get('/profile/:username', {
+	// GET /users/me
+	fastify.get('/me', {
+		preHandler: fastify.authenticate,
+		handler: userController.MyProfileEndpoint.bind(userController)
+	});
+
+	// GET /users/me
+	fastify.get('/:username', {
 		schema: userProfileSchema,
 		preHandler: fastify.authenticate,
 		handler: userController.UserProfileEndpoint.bind(userController)
 	});
-
-	fastify.get('/me', {
+	
+	// PUT /users/me
+	fastify.put('/me', {
+		schema: userUpdateSchema,
 		preHandler: fastify.authenticate,
-		handler: userController.Me.bind(userController)
+		handler: userController.UpdateMyProfileEndpoint.bind(userController)
 	});
+	
+	// DELETE /users/me
+	// fastify.get('/profile/:username', {
+	// 	schema: userProfileSchema,
+	// 	preHandler: fastify.authenticate,
+	// 	handler: userController.UserProfileEndpoint.bind(userController)
+	// });
 
 	// USER MANAGEMENT (admin or self-service)
 	// GET /users — List users (admin only)

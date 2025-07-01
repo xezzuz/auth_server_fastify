@@ -1,5 +1,5 @@
-import { userInfo } from "os";
 import { db } from "../database"
+import { InternalServerError } from "../types/auth.types";
 
 class RelationsRepository {
 	constructor() {
@@ -13,47 +13,55 @@ class RelationsRepository {
 	}
 	
 	async create(requester_id: number, receiver_id: number, relation_status: string) {
-		const insertResult = await db.run(
-			`INSERT INTO relations (requester_user_id, receiver_user_id, relation_status)
-				VALUES (?, ?, ?)`,
-		[requester_id, receiver_id, relation_status]);
-
-		console.log(insertResult);
-
-		return insertResult;
+		try {
+			const { lastID } = await db.run(
+				`INSERT INTO relations (requester_user_id, receiver_user_id, relation_status)
+					VALUES (?, ?, ?)`,
+			[requester_id, receiver_id, relation_status]);
+			return lastID;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
 	async findById(id: number) {
-		const getResult = await db.get(
-			`SELECT * FROM relations WHERE id = ?`,
-		[id]);
-
-		console.log(getResult);
-
-		return getResult;
+		try {
+			const relation = await db.get(
+				`SELECT * FROM relations WHERE id = ?`,
+			[id]);
+			return relation ?? null;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
-	async findTwoWaysByUsers(user_id_a: number, user_id_b: number) {
-		const getResult = await db.get(
-			`SELECT * FROM relations 
-				WHERE (requester_user_id = ? AND receiver_user_id = ?)
-				OR (requester_user_id = ? AND receiver_user_id = ?)`,
-		[user_id_a, user_id_b, user_id_b, user_id_a]);
-
-		console.log(getResult);
-
-		return getResult;
+	async findTwoWaysByUsers(user_id_a: number, user_id_b: number) : Promise<any | null> {
+		try {
+			const relation = await db.get(
+				`SELECT * FROM relations 
+					WHERE (requester_user_id = ? AND receiver_user_id = ?)
+					OR (requester_user_id = ? AND receiver_user_id = ?)`,
+			[user_id_a, user_id_b, user_id_b, user_id_a]);
+			return relation ?? null;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
 	async findOneWayByUsers(requester_id: number, receiver_id: number) {
-		const getResult = await db.get(
-			`SELECT * FROM relations 
-				WHERE requester_user_id = ? AND receiver_user_id = ?`,
-		[requester_id, receiver_id]);
-
-		console.log(getResult);
-
-		return getResult;
+		try {
+			const relation = await db.get(
+				`SELECT * FROM relations 
+					WHERE requester_user_id = ? AND receiver_user_id = ?`,
+			[requester_id, receiver_id]);
+			return relation ?? null;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
 	// INCOMING FRIEND REQUESTS
@@ -159,16 +167,18 @@ class RelationsRepository {
 		return relation;
 	}
 
-	async updateRelationStatus(id: number, status: string) {
-		const runResult = await db.run(`
-			UPDATE relations 
-			SET relation_status = ?, updated_at = CURRENT_TIMESTAMP
-			WHERE id = ?
-		`, [status, id]);
-
-		console.log(runResult);
-
-		return (runResult);
+	async updateRelationStatus(id: number, status: string) : Promise<boolean> {
+		try {
+			const { changes } = await db.run(`
+				UPDATE relations 
+				SET relation_status = ?, updated_at = CURRENT_TIMESTAMP
+				WHERE id = ?
+			`, [status, id]);
+			return changes > 0;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
 	async deleteRelationById(id: number) {

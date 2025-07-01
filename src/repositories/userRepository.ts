@@ -1,15 +1,26 @@
 import { db } from "../database";
 import { CreateUserRequest, ISQLCreateUser, User } from "../types";
+import { InternalServerError } from "../types/auth.types";
 
 class UserRepository {
 
 	async create(data: ISQLCreateUser) : Promise<number> {
 		const { username, password, email, first_name, last_name, bio, avatar_url, auth_provider } = data;
 		
-		const runResult = await db.run(
-			`INSERT INTO users (username, password, email, first_name, last_name, avatar_url, auth_provider) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			[username, password, email, first_name, last_name, avatar_url, auth_provider]
-		);
+		try {
+			const { lastID } = await db.run(
+				`INSERT INTO users (username, password, email, first_name, last_name, avatar_url, auth_provider) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+				[username, password, email, first_name, last_name, avatar_url, auth_provider]
+			);
+			return lastID;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
+		// const runResult = await db.run(
+		// 	`INSERT INTO users (username, password, email, first_name, last_name, avatar_url, auth_provider) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		// 	[username, password, email, first_name, last_name, avatar_url, auth_provider]
+		// );
 
 		// const createdUser = await db.get<User>(
 		// 	`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?`,
@@ -19,38 +30,49 @@ class UserRepository {
 		// if (!createdUser)
 		// 	throw new Error(`Error creating user <${username}>!`); // TODO
 
-		return runResult.lastID;
+		// return runResult.lastID;
 	}
 
-	async findById(id: number) : Promise<User | undefined> {
-		const getResult = await db.get<User>(
-			`SELECT id, username, email, password, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?`,
-			[id]
-		);
-
-		console.log(getResult);
-		return getResult;
+	async findById(id: number) : Promise<User | null> {
+		try {
+			const user = await db.get<User>(
+				`SELECT * FROM users WHERE id = ?`,
+				[id]
+			);
+			return user ?? null;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
-	async findByUsername(username: string) : Promise<User | undefined> {
-		const getResult = await db.get<User>(
-			`SELECT id, username, email, password, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE username = ?`,
-			[username]
-		);
-
-		return getResult;
+	async findByUsername(username: string) : Promise<User | null> {
+		try {
+			const user = await db.get<User>(
+				`SELECT * FROM users WHERE username = ?`,
+				[username]
+			);
+			return user ?? null;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
-	async findByEmail(email: string) : Promise<User | undefined> {
-		const getResult = await db.get<User>(
-			`SELECT id, username, email, password, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE email = ?`,
-			[email]
-		);
-
-		return getResult;
+	async findByEmail(email: string) : Promise<User | null> {
+		try {
+			const user = await db.get<User>(
+				`SELECT * FROM users WHERE email = ?`,
+				[email]
+			);
+			return user ?? null;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
-	async update(id: number, updates: Partial<Pick<User, 'username' | 'password' | 'first_name' | 'last_name'>>) : Promise<User | undefined> {
+	async update(id: number, updates: Partial<Pick<User, 'username' | 'password' | 'first_name' | 'last_name'>>) : Promise<boolean> {
 		const keys = [];
 		const values = [];
 
@@ -72,26 +94,34 @@ class UserRepository {
 		}
 
 		if (keys.length === 0)
-			return this.findById(id);
+			return false;
 
 		keys.push(`updated_at = CURRENT_TIMESTAMP`);
 		values.push(id);
 
-		const runResult = await db.run(
-			`UPDATE users SET ${keys.join(', ')} WHERE id = ?`,
-			values
-		);
-
-		return this.findById(id);
+		try {
+			const { changes } = await db.run(
+				`UPDATE users SET ${keys.join(', ')} WHERE id = ?`,
+				values
+			);
+			return changes > 0;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
 	async delete(id: number) : Promise<boolean> {
-		const runResult = await db.run(
-			`DELETE FROM users WHERE id = ?`,
-			[id]
-		);
-
-		return runResult.changes > 0;
+		try {
+			const { changes } = await db.run(
+				`DELETE FROM users WHERE id = ?`,
+				[id]
+			);
+			return changes > 0;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
 	}
 
 	async exists(username: string, email: string) : Promise<boolean> {

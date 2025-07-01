@@ -89,6 +89,10 @@ export interface IProfileRequest {
 	username: string
 }
 
+export interface IRelationsRequest {
+	user_id: string
+}
+
 // export interface RefreshRequest {
 // 	username: string,
 // 	password: string

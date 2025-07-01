@@ -1,4 +1,5 @@
 import RelationsRepository from "../repositories/relationsRepository";
+import { InternalServerError } from "../types/auth.types";
 
 class RelationsService {
 	private relationsRepository: RelationsRepository;
@@ -24,18 +25,11 @@ class RelationsService {
 				throw new Error('AN UNEXPECTED ERROR OCCURED');
 		}
 		
-		const newRelation = await this.relationsRepository.create(sender_id, receiver_id, 'PENDING');
+		const newRelationID = await this.relationsRepository.create(sender_id, receiver_id, 'PENDING');
+		const newRelation = await this.relationsRepository.findById(newRelationID);
+		if (!newRelation)
+			throw new InternalServerError();
 		return newRelation;
-		// switch (existingRelation.relation_status) {
-		// 	case 'BLOCKED':
-		// 		throw new Error('UNABLE TO SEND FRIEND REQUEST (BLOCKED)');
-		// 	case 'PENDING':
-		// 		throw new Error('FRIEND REQUEST ALREADY SENT');
-		// 	case 'ACCEPTED':
-		// 		throw new Error('ALREADY FRIENDS');
-		// 	default:
-		// 		throw new Error('AN UNEXPECTED ERROR OCCURED');
-		// }
 	}
 
 	async cancelFriendRequest(sender_id: number, receiver_id: number) {
@@ -52,28 +46,32 @@ class RelationsService {
 		
 		await this.relationsRepository.deleteRelationById(existingTwoWayRelation.id);
 	}
-		
-	async acceptFriendRequest(current_user_id: number, requester_id: number) {
+
+	async acceptFriendRequest(sender_id: number, receiver_id: number) {
 		const existingTwoWayRelation = await this.relationsRepository.findTwoWaysByUsers(
-			current_user_id,
-			requester_id
+			sender_id,
+			receiver_id
 		);
 
 		if (!existingTwoWayRelation || existingTwoWayRelation.relation_status !== 'PENDING')
 			throw new Error('NO PENDING REQUEST FROM THIS USER TO ACCEPT');
 		console.log('accept request');
 		console.log(existingTwoWayRelation);
-		if (existingTwoWayRelation.requester_user_id === current_user_id)
+		if (existingTwoWayRelation.requester_user_id === sender_id)
 			throw new Error('ONLY THE RECEIVER CAN ACCEPT REQUEST');
 
-		const newRelation = await this.relationsRepository.updateRelationStatus(
+		const changes = await this.relationsRepository.updateRelationStatus(
 			existingTwoWayRelation.id,
 			'ACCEPTED'
 		);
-		if (newRelation)
-			return newRelation;
+		if (!changes)
+			throw new InternalServerError();
 
-		throw new Error('AN UNEXPECTED ERROR OCCURED');
+		const updatedRelation = await this.relationsRepository.findById(existingTwoWayRelation.id);
+		if (!updatedRelation)
+			throw new InternalServerError();
+
+		return updatedRelation;
 	}
 	
 	async blockUser(blocker_id: number, blocked_id: number) {
@@ -88,11 +86,14 @@ class RelationsService {
 			throw new Error('UNABLE TO BLOCK (HE ALREADY BLOCKED YOU)');
 
 		await this.relationsRepository.deleteRelationById(existingTwoWayRelation.id);
-		const newRelation = await this.relationsRepository.create(
+		const newRelationID = await this.relationsRepository.create(
 			blocker_id,
 			blocked_id,
 			'BLOCKED'
 		);
+		const newRelation = await this.relationsRepository.findById(newRelationID);
+		if (!newRelation)
+			throw new InternalServerError();
 		return newRelation;
 	}
 

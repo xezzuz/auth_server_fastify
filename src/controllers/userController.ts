@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import UserService from "../services/userService";
 import UserRepository from "../repositories/userRepository";
 import { IProfileRequest } from "../types";
+import { AuthError, UserNotFoundError } from "../types/auth.types";
 
 class UserController {
 	private userService: UserService;
@@ -37,39 +38,49 @@ class UserController {
 		}
 	}
 	
+	async MyProfileEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		console.log('request auth injected: ', request.user);
+		try {
+			const user_id = request.user?.sub;
+
+			const user = await this.userService.MyProfile(user_id!);
+
+			reply.status(200).send({ success: true, data: user });
+		} catch (err: any) {
+			const { statusCode, errorCode } = err;
+			reply.status(statusCode).send({ success: false, error: errorCode });
+		}
+	}
+
 	async UserProfileEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const { username } = request.params as IProfileRequest;
 			const user_id = request.user?.sub;
 
-			const data = await this.userService.UserProfile(user_id!, username);
+			const userAndFriendshipStatus = await this.userService.UserProfile(user_id!, username);
 
-			if (!data)
-				reply.status(404).send({ success: false, error: {} });
-			else
-				reply.status(200).send({ success: true, data });
-			
+			reply.status(200).send({ success: true, data: userAndFriendshipStatus });
 		} catch (err: any) {
-			reply.status(500).send({ success: false, data: {} })
+			const { statusCode, errorCode } = err;
+			reply.status(statusCode).send({ success: false, error: errorCode });
 		}
 	}
 
-	async Me(request: FastifyRequest, reply: FastifyReply) {
-		console.log('request auth injected: ', request.user);
+	async UpdateMyProfileEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const user_id = request.user?.sub;
+			const updates = request.body;
 
-			const data = await this.userService.MeProfile(user_id!);
+			const newUser = await this.userService.UpdateUserProfile(user_id!, updates);
 
-			if (!data)
-				reply.status(404).send({ success: false, error: {} });
-			else
-				reply.status(200).send({ success: true, data });
-			
+			reply.status(200).send({ success: true, data: newUser });
 		} catch (err: any) {
-			reply.status(500).send({ success: false, data: {} })
+			const { statusCode, errorCode } = err;
+			reply.status(statusCode).send({ success: false, error: errorCode });
 		}
 	}
+
+	// DELETE USER
 }
 
 export default UserController;
