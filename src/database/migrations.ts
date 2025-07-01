@@ -170,7 +170,8 @@ const MIGRATIONS = [
 				player_away_score INTEGER NOT NULL,
 
 				game_type TEXT NOT NULL, -- (CHECK PING PONG OR TICTACTOE)
-				date_played DATETIME DEFAULT CURRENT_TIMESTAMP,
+				started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				finished_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
 				player_home_id INTEGER NOT NULL,
 				player_away_id INTEGER NOT NULL,

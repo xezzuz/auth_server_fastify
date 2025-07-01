@@ -17,20 +17,6 @@ class UserRepository {
 			console.error('SQLite Error: ', err);
 			throw new InternalServerError();
 		}
-		// const runResult = await db.run(
-		// 	`INSERT INTO users (username, password, email, first_name, last_name, avatar_url, auth_provider) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		// 	[username, password, email, first_name, last_name, avatar_url, auth_provider]
-		// );
-
-		// const createdUser = await db.get<User>(
-		// 	`SELECT id, username, email, first_name, last_name, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?`,
-		// 	[runResult.lastID]
-		// );
-
-		// if (!createdUser)
-		// 	throw new Error(`Error creating user <${username}>!`); // TODO
-
-		// return runResult.lastID;
 	}
 
 	async findById(id: number) : Promise<User | null> {
