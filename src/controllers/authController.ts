@@ -42,11 +42,11 @@ class AuthController {
 	// REGISTER (NO-AUTO-LOGIN): REGISTERS USER IN DB
 	async RegisterEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
-			const data = request.body as IRegisterRequest;
+			const { first_name, last_name, username, email, password } = request.body as IRegisterRequest;
 			
-			const createdUser = await this.authService.SignUp(data);
+			await this.authService.SignUp(first_name, last_name, username, email, password);
 			
-			reply.code(201).send({ success: true, data: createdUser});
+			reply.code(201).send({ success: true, data: {} });
 		} catch (err: any) {
 			const response = AuthErrorHandler.handle(err, true);
 
@@ -57,10 +57,11 @@ class AuthController {
 	// LOGIN: GENERATES ACCESS / REFRESH TOKENS
 	async LoginEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		try {
-			const data = request.body as ILoginRequest;
+			const { username, password } = request.body as ILoginRequest;
 			const userAgent = request.headers["user-agent"] || '';
 			
-			const { user, refreshToken, accessToken } = await this.authService.LogIn(data, userAgent, request.ip);
+			const { user, refreshToken, accessToken } 
+				= await this.authService.LogIn(username, password, userAgent, request.ip);
 
 			reply.code(200).setCookie(
 				'refreshToken', refreshToken, {
@@ -81,9 +82,8 @@ class AuthController {
 			const userAgent = request.headers["user-agent"] || '';
 			// const { access_token } = request.body as ILogoutRequest;
 			const refresh_token = request.cookies?.['refreshToken'];
-			console.log('cookies: ', request.cookies);
+			// console.log('cookies: ', request.cookies);
 			
-			// await this.authService.LogOut(request.headers.authorization, userAgent, request.ip);
 			await this.authService.LogOut(refresh_token!, userAgent, request.ip);
 			
 			reply.code(200).setCookie(
@@ -147,8 +147,8 @@ class AuthController {
 		const userAgent = request.headers["user-agent"] || '';
 
 		try {
-			const data = await this.authService.GoogleLogIn(code, userAgent, request.ip);
-			reply.redirect(`http://localhost:3000/login?access_token=${data.accessToken}&refresh_token=${data.refreshToken}`);
+			const { accessToken, refreshToken} = await this.authService.GoogleLogIn(code, userAgent, request.ip);
+			reply.redirect(`http://localhost:3000/login?access_token=${accessToken}&refresh_token=${refreshToken}`);
 			// reply.code(200).send({ success: true, data });
 		} catch (err: any) {
 			reply.status(400).send({ success: false, error: err.message });
@@ -161,8 +161,8 @@ class AuthController {
 		const userAgent = request.headers["user-agent"] || '';
 
 		try {
-			const data = await this.authService.IntraLogIn(code, userAgent, request.ip);
-			reply.redirect(`http://localhost:3000/login?access_token=${data.accessToken}&refresh_token=${data.refreshToken}`);
+			const { accessToken, refreshToken} = await this.authService.IntraLogIn(code, userAgent, request.ip);
+			reply.redirect(`http://localhost:3000/login?access_token=${accessToken}&refresh_token=${refreshToken}`);
 			// reply.code(200).send({ success: true, data });
 		} catch (err: any) {
 			reply.status(400).send({ success: false, error: err.message });

@@ -52,30 +52,28 @@ class AuthService {
 		this.authUtils = new AuthUtils();
 	}
 
-	async SignUp(data: IRegisterRequest) : Promise<number> { //Promise<{ user: Omit<User, 'password'> }>
-		const { first_name, last_name, email, username, password } = data;
+	async SignUp(first_name: string, last_name: string, username: string, email: string, password: string) : Promise<void> {
+		this.validateUserInput({ first_name, last_name, email, username, password }); // TODO
 
-		this.validateUserInput(data); // TODO
-
-		if (await this.userRepository.existsByUsername(username))
+		if (await this.userRepository.findByUsername(username) != null)
 			throw new UserAlreadyExistsError('Username');
-		if (await this.userRepository.existsByEmail(email))
+		if (await this.userRepository.findByEmail(email) != null)
 			throw new UserAlreadyExistsError('Email');
 
 		const hashedPassword = await bcrypt.hash(password!, this.authConfig.bcryptRounds);
 
-		const createdUserID = await this.userRepository.create({
-			...data,
-			password: hashedPassword,
-			auth_provider: 'local',
-			avatar_url: 'https://pbs.twimg.com/profile_images/1300555471468851202/xtUnFLEm_200x200.jpg'
-		});
-
-		return createdUserID;
+		const createdUserID = await this.userRepository.create(
+			username,
+			email,
+			first_name,
+			last_name,
+			'https://pbs.twimg.com/profile_images/1300555471468851202/xtUnFLEm_200x200.jpg',
+			'local',
+			hashedPassword
+		);
 	}
 
-	async LogIn(data: ILoginRequest, userAgent: string, ip: string) : Promise<{ user: Omit<User, 'password'>, accessToken: JWT_TOKEN, refreshToken: JWT_TOKEN }> {
-		const { username, password } = data;
+	async LogIn(username: string, password: string, userAgent: string, ip: string) : Promise<{ user: Omit<User, 'password'>, accessToken: JWT_TOKEN, refreshToken: JWT_TOKEN }> {
 		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
 
 		// if (!username || !username.trim())
@@ -83,7 +81,8 @@ class AuthService {
 		// if (!password || !password.trim())
 		// 	throw new FormFieldMissing('Password');
 		const existingUser = await this.userRepository.findByUsername(username);
-		const isValidPassword = await bcrypt.compare(password, existingUser ? existingUser.password : this.authConfig.bcryptDummyHash);
+		const isValidPassword = 
+			await bcrypt.compare(password, existingUser ? existingUser.password : this.authConfig.bcryptDummyHash);
 		if (!existingUser || !isValidPassword)
 			throw new InvalidCredentialsError();
 
@@ -112,14 +111,17 @@ class AuthService {
 			// verify token signature?
 			const decodedJWT = jwt.decode(id_token);
 
-			const userData: ISQLCreateUser = this.GoogleOAuthTokenToData(decodedJWT);
+			const userData = this.GoogleOAuthTokenToData(decodedJWT);
 
 			let	  createdUser;
-			const usernameExists = await this.userRepository.existsByUsername(userData.username);
-			const emailExists = await this.userRepository.existsByEmail(userData.email);
+			const usernameExists = await this.userRepository.findByUsername(userData.username);
+			const emailExists = await this.userRepository.findByUsername(userData.email);
 			const isRegistered = usernameExists || emailExists;
 			if (!isRegistered) {
-				const createdUserID = await this.userRepository.create(userData);
+				const createdUserID = await this.userRepository.create(
+					userData.username, userData.email, userData.first_name, userData.last_name,
+					userData.avatar_url, userData.auth_provider
+				);
 				createdUser = await this.userRepository.findById(createdUserID);
 			} else {
 				createdUser = await this.userRepository.findByUsername(userData.username);
@@ -152,14 +154,17 @@ class AuthService {
 		try {
 			const { access_token } = await this.getIntraOAuthTokens(code);
 
-			const userData: ISQLCreateUser = await this.IntraOAuthTokenToData(access_token);
+			const userData = await this.IntraOAuthTokenToData(access_token);
 
 			let	  createdUser;
-			const usernameExists = await this.userRepository.existsByUsername(userData.username);
-			const emailExists = await this.userRepository.existsByEmail(userData.email);
+			const usernameExists = await this.userRepository.findByUsername(userData.username);
+			const emailExists = await this.userRepository.findByEmail(userData.email);
 			const isRegistered = usernameExists || emailExists;
 			if (!isRegistered) {
-				const createdUserID = await this.userRepository.create(userData);
+				const createdUserID = await this.userRepository.create(
+					userData.username, userData.email, userData.first_name, userData.last_name,
+					userData.avatar_url, userData.auth_provider
+				);
 				createdUser = await this.userRepository.findById(createdUserID);
 			} else {
 				createdUser = await this.userRepository.findByUsername(userData.username);
@@ -190,26 +195,26 @@ class AuthService {
 
 	async LogOut(refreshToken: string, userAgent: string, ip: string) : Promise<void> {
 		// const refreshToken = this.getBearerToken(authHeader);
-		console.log('refreshToken', refreshToken);
-		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
+		// console.log('refreshToken', refreshToken);
+		// const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
 
-		let payload: JWT_REFRESH_PAYLOAD;
+		// let payload: JWT_REFRESH_PAYLOAD;
 	
-		try {
-			payload = await this.authUtils.verifyRefreshToken(refreshToken);
-		} catch (err) {
-			if (err instanceof jwt.JsonWebTokenError)
-				throw new TokenInvalidError();
-			else {
-				this.sessionManager.revokeSession(refreshToken, 'inactivity');
-				throw new TokenExpiredError('Refresh'); // delete related session
-			}
-		}
+		// try {
+		// 	payload = await this.authUtils.verifyRefreshToken(refreshToken);
+		// } catch (err) {
+		// 	if (err instanceof jwt.JsonWebTokenError)
+		// 		throw new TokenInvalidError();
+		// 	else {
+		// 		this.sessionManager.revokeSession(refreshToken, 'inactivity');
+		// 		throw new TokenExpiredError('Refresh'); // delete related session
+		// 	}
+		// }
 
-		await this.sessionManager.validateSession(
-			refreshToken,
-			currentSessionFingerprint
-		);
+		// await this.sessionManager.validateSession(
+		// 	refreshToken,
+		// 	currentSessionFingerprint
+		// );
 
 		await this.sessionManager.revokeSession(
 			refreshToken,
@@ -229,7 +234,7 @@ class AuthService {
 			if (err instanceof jwt.JsonWebTokenError)
 				throw new TokenInvalidError();
 			else {
-				this.sessionManager.revokeSession(refreshToken, 'inactivity');
+				await this.sessionManager.revokeSession(refreshToken, 'inactivity');
 				throw new TokenExpiredError('Refresh'); // delete related session
 			}
 		}
@@ -333,7 +338,7 @@ class AuthService {
 	}
 
 	private GoogleOAuthTokenToData(data: any) : ISQLCreateUser {
-		const userData: ISQLCreateUser = {
+		return {
 			email: data.email,
 			username: data.email.split('@')[0],
 			first_name: data.given_name || data.name.split(' ')[0] || 'Ismail',
@@ -341,8 +346,6 @@ class AuthService {
 			avatar_url: data.picture || 'https://pbs.twimg.com/profile_images/1300555471468851202/xtUnFLEm_200x200.jpg',
 			auth_provider: 'Google'
 		}
-
-		return userData;
 	}
 
 	// TODO
@@ -364,16 +367,14 @@ class AuthService {
 	private async IntraOAuthTokenToData(access_token: string) : Promise<ISQLCreateUser> {
 		const { data } = await axios.get(`https://api.intra.42.fr/v2/me?access_token=${access_token}`);
 
-		const userData: ISQLCreateUser = {
+		return {
 			email: data.email,
 			username: data.login,
 			first_name: data.first_name || data.usual_first_name.split(' ')[0] || data.displayname.split(' ')[0],
 			last_name: data.last_name || data.usual_last_name.split(' ')[0] || data.displayname.split(' ')[0],
 			avatar_url: data.image.link || 'https://pbs.twimg.com/profile_images/1300555471468851202/xtUnFLEm_200x200.jpg',
 			auth_provider: '42'
-		};
-
-		return userData;
+		}
 	}
 }
 

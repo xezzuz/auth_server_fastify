@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { TokenInvalidError, TokenExpiredError } from '../../types/auth.types';
 
 export interface JWT_ACCESS_PAYLOAD {
 	sub: number,
@@ -71,12 +72,28 @@ class JWTUtils {
 		return this.signJWT(payload, JWT_REFRESH_SECRET, payload.exp);
 	}
 
-	public verifyAccessToken(token: string) {
-		return this.verifyJWT<JWT_ACCESS_PAYLOAD>(token, JWT_ACCESS_SECRET);
+	public async verifyAccessToken(token: string) {
+		try {
+			const payload = await this.verifyJWT<JWT_ACCESS_PAYLOAD>(token, JWT_ACCESS_SECRET);
+			return payload;
+		} catch (err: any) {
+			if (err instanceof jwt.JsonWebTokenError)
+				throw new TokenInvalidError();
+			else
+				throw new TokenExpiredError('Access');
+		}
 	}
 
-	public verifyRefreshToken(token: string) {
-		return this.verifyJWT<JWT_REFRESH_PAYLOAD>(token, JWT_REFRESH_SECRET);
+	public async verifyRefreshToken(token: string) {
+		try {
+			const payload = await this.verifyJWT<JWT_REFRESH_PAYLOAD>(token, JWT_REFRESH_SECRET);
+			return payload;
+		} catch (err: any) {
+			if (err instanceof jwt.JsonWebTokenError)
+				throw new TokenInvalidError();
+			else
+				throw new TokenExpiredError('Refresh');
+		}
 	}
 
 	private generateRandom32() {

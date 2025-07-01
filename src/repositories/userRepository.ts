@@ -4,8 +4,15 @@ import { InternalServerError } from "../types/auth.types";
 
 class UserRepository {
 
-	async create(data: ISQLCreateUser) : Promise<number> {
-		const { username, password, email, first_name, last_name, bio, avatar_url, auth_provider } = data;
+	async create(
+		username: string,
+		email: string,
+		first_name: string,
+		last_name: string,
+		avatar_url: string,
+		auth_provider: string,
+		password?: string
+	) : Promise<number> {
 		
 		try {
 			const runResult = await db.run(
@@ -110,30 +117,30 @@ class UserRepository {
 		}
 	}
 
-	async exists(username: string, email: string) : Promise<boolean> {
-		const usernameResult = await this.findByUsername(username);
-		const emailResult = await this.findByEmail(email);
+	// async exists(username: string, email: string) : Promise<boolean> {
+	// 	const usernameResult = await this.findByUsername(username);
+	// 	const emailResult = await this.findByEmail(email);
 
-		if (usernameResult || emailResult)
-			return true;
-		return false;
-	}
+	// 	if (usernameResult || emailResult)
+	// 		return true;
+	// 	return false;
+	// }
 
-	async existsByUsername(username: string) : Promise<boolean> {
-		const usernameResult = await this.findByUsername(username);
+	// async existsByUsername(username: string) : Promise<boolean> {
+	// 	const usernameResult = await this.findByUsername(username);
 
-		if (usernameResult)
-			return true;
-		return false;
-	}
+	// 	if (usernameResult)
+	// 		return true;
+	// 	return false;
+	// }
 
-	async existsByEmail(email: string) : Promise<boolean> {
-		const emailResult = await this.findByEmail(email);
+	// async existsByEmail(email: string) : Promise<boolean> {
+	// 	const emailResult = await this.findByEmail(email);
 
-		if (emailResult)
-			return true;
-		return false;
-	}
+	// 	if (emailResult)
+	// 		return true;
+	// 	return false;
+	// }
 }
 
 export default UserRepository;
