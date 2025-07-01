@@ -105,6 +105,8 @@ class AuthController {
 		try {
 			const userAgent = request.headers["user-agent"] || '';
 			const oldRefreshToken = request.cookies?.['refreshToken'];
+			if (!oldRefreshToken)
+				throw new TokenRequiredError();
 			console.log('======================================================================================================================================================================================================');
 			console.log('refreshToken', oldRefreshToken);
 			
@@ -120,7 +122,7 @@ class AuthController {
 			).send({ success: true, data: { accessToken } });
 			// reply.code(200).send({ success: true, data: { accessToken, refreshToken } });
 		} catch (err: any) {
-			console.log('Error', err);
+			// console.log('Error', err);
 			reply.code(401).send({ success: false, error: err.message});
 		}
 	}

@@ -5,6 +5,7 @@ import { db } from './database/index';
 import runMigrations from './database/migrations';
 import cors from '@fastify/cors';
 import userRouter from './routes/userRouter';
+import pinoPretty from 'pino-pretty';
 
 // declare module 'fastify' {
 // 	interface FastifyInstance {
@@ -13,7 +14,18 @@ import userRouter from './routes/userRouter';
 // }
 
 async function buildApp(): Promise<FastifyInstance> {
-	const fastify: FastifyInstance = Fastify({ logger: true });
+	const fastify: FastifyInstance = Fastify({
+		logger: {
+		  transport: {
+			target: 'pino-pretty',
+			options: {
+			  colorize: true,
+			  translateTime: 'SYS:standard', // human-readable timestamp
+			  ignore: 'pid,hostname'         // remove unnecessary fields
+			}
+		  }
+		}
+	  });
 
 	// REGISTER DATABASE PLUGIN
 	// fastify.register(SQLitePlugin);

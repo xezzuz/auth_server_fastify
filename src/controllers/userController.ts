@@ -22,14 +22,14 @@ class UserController {
 				return ;
 			}
 
-			let isTaken: boolean;
+			let isTaken;
 
 			if (username && !email)
-				isTaken = await this.userRepository.existsByUsername(username);
+				isTaken = await this.userRepository.findByUsername(username);
 			else if (email && !username)
-				isTaken = await this.userRepository.existsByEmail(email);
-			else
-				isTaken = await this.userRepository.exists(username!, email!);
+				isTaken = await this.userRepository.findByEmail(email);
+			// else
+			// 	isTaken = await this.userRepository.exists(username!, email!);
 
 			reply.status(isTaken ? 404 : 200).send({ success: true, available: !isTaken });
 

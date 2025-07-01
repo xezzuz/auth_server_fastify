@@ -12,7 +12,7 @@ class ResetPasswordService {
 	}
 
 	async setup(email: string) : Promise<boolean> {
-		const exists = await this.userRepository.existsByEmail(email);
+		const exists = await this.userRepository.findByEmail(email);
 		if (!exists)
 			return false; // throw user not found
 
@@ -30,7 +30,7 @@ class ResetPasswordService {
 	}
 
 	async verify(email: string, code: string) {
-		const exists = await this.userRepository.existsByEmail(email);
+		const exists = await this.userRepository.findByEmail(email);
 		if (!exists)
 			return false; // throw user not found
 
@@ -49,7 +49,7 @@ class ResetPasswordService {
 	}
 
 	async update(email: string, code: string, newPassword: string) {
-		const exists = await this.userRepository.existsByEmail(email);
+		const exists = await this.userRepository.findByEmail(email);
 		if (!exists)
 			return false; // throw user not found
 
