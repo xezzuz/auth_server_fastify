@@ -1,7 +1,7 @@
 import { db } from "../database";
 import { InternalServerError } from "../types/auth.types";
 
-class MatchesReposity {
+class MatchesRepository {
 	async create(
 		player_home_score: number,
 		player_away_score: number,
@@ -22,6 +22,35 @@ class MatchesReposity {
 				[player_home_score, player_away_score, game_type, startedVal, finishedVal, player_home_id, player_away_id]
 			);
 			return lastID;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
+	}
+
+	async getAllMatchesByUser(user_id: number) : Promise<any | null> {
+		try {
+			const results = await db.all(
+				`SELECT * FROM matches WHERE player_home_id = ? OR player_away_id = ?`,
+				[user_id, user_id]
+			);
+			return results;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
+	}
+
+	async getMatchesPageByUser(user_id: number, page: number) : Promise<any | null> {
+		const offset = (page - 1) * 5;
+		try {
+			const results = await db.all(
+				`SELECT * FROM matches WHERE player_home_id = ? OR player_away_id = ?
+					ORDER BY started_at DESC
+						LIMIT 5 OFFSET ?`,
+				[user_id, user_id, offset]
+			);
+			return results;
 		} catch (err: any) {
 			console.error('SQLite Error: ', err);
 			throw new InternalServerError();
@@ -140,7 +169,7 @@ class MatchesReposity {
 
 						CASE
 							WHEN (player_home_id = ?) THEN player_home_score
-							WHEN (player_home_id = ?) THEN player_home_score
+							WHEN (player_away_id = ?) THEN player_away_score
 						END
 
 					) AS average_score
@@ -148,7 +177,7 @@ class MatchesReposity {
 				WHERE (player_home_id = ?) OR (player_away_id = ?)
 				GROUP BY game_type`,
 				[user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id]
-			);
+			); // i need to add total playtime + avg game playtime
 			return results;
 		} catch (err: any) {
 			console.error('SQLite Error: ', err);
@@ -173,4 +202,4 @@ class MatchesReposity {
 	// }
 }
 
-export default MatchesReposity;
+export default MatchesRepository;

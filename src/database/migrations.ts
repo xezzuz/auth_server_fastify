@@ -154,6 +154,11 @@ const MIGRATIONS = [
 			CREATE TABLE IF NOT EXISTS users_stats (
 				id INTEGER PRIMARY KEY AUTOINCREMENT, 
 				
+				level INTEGER DEFAULT 0,
+				total_xp INTEGER DEFAULT 0,
+				current_streak INTEGER DEFAULT 0,
+				longest_streak INTEGER DEFAULT 0,
+
 				user_id INTEGER NOT NULL,
 				FOREIGN KEY (user_id) REFERENCES users(id)
 			)

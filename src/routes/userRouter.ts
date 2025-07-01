@@ -1,13 +1,14 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import AuthController from "../controllers/authController";
 import UserController from "../controllers/userController";
+import StatsController from "../controllers/statsController";
 import RelationsController from "../controllers/relationsContoller";
 import RelationsRepository from "../repositories/relationsRepository";
-import { relationsRequestSchema, userProfileSchema, userUpdateSchema } from "../schemas/users.schema";
+import { matchesRequestSchema, relationsRequestSchema, statsRequestSchema, userProfileSchema, userUpdateSchema } from "../schemas/users.schema";
 import Authenticate from "../middleware/Authenticate";
 
 async function userRouter(fastify: FastifyInstance) {
 	const userController: UserController = new UserController();
+	const statsController: StatsController = new StatsController();
 	const relationsController: RelationsController = new RelationsController();
 	const relRepo: RelationsRepository = new RelationsRepository();
 
@@ -90,6 +91,24 @@ async function userRouter(fastify: FastifyInstance) {
 	// 	preHandler: fastify.authenticate,
 	// 	handler: userController.UserProfileEndpoint.bind(userController)
 	// });
+
+	fastify.get('/me/stats', {
+		// schema: userUpdateSchema,
+		preHandler: fastify.authenticate,
+		handler: statsController.MyStats.bind(statsController)
+	});
+
+	fastify.get('/:user_id/stats', {
+		schema: statsRequestSchema,
+		preHandler: fastify.authenticate,
+		handler: statsController.UserStats.bind(statsController)
+	});
+
+	fastify.get('/:user_id/matches', {
+		schema: matchesRequestSchema,
+		preHandler: fastify.authenticate,
+		handler: statsController.UserStats.bind(statsController)
+	});
 
 	// USER MANAGEMENT (admin or self-service)
 	// GET /users — List users (admin only)

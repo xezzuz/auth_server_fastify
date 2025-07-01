@@ -30,6 +30,33 @@ const relationsRequestParams = {
 	additionalProperties: false
 }
 
+const statsRequestParams = {
+	type: 'object',
+	properties: {
+		user_id: { type: 'string' }
+	},
+	required: ['user_id'],
+	additionalProperties: false
+}
+
+const matchesRequestParams = {
+	type: 'object',
+	properties: {
+		user_id: { type: 'string' }
+	},
+	required: ['user_id'],
+	additionalProperties: false
+}
+
+const matchesRequestQuery = {
+	type: 'object',
+	properties: {
+		page: { type: 'number' }
+	},
+	required: ['page'],
+	additionalProperties: false
+}
+
 export const userProfileSchema = {
 	params: userProfileParams
 }
@@ -40,4 +67,13 @@ export const userUpdateSchema = {
 
 export const relationsRequestSchema = {
 	params: relationsRequestParams
+}
+
+export const statsRequestSchema = {
+	params: statsRequestParams
+}
+
+export const matchesRequestSchema = {
+	params: matchesRequestParams,
+	querystring: matchesRequestQuery
 }

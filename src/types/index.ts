@@ -93,6 +93,14 @@ export interface IRelationsRequest {
 	user_id: string
 }
 
+export interface IStatsRequest {
+	user_id: string
+}
+
+export interface IMatchesRequest {
+	user_id: string
+}
+
 // export interface RefreshRequest {
 // 	username: string,
 // 	password: string
