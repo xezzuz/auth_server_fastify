@@ -53,6 +53,10 @@ async function userRouter(fastify: FastifyInstance) {
 	// PATCH /users/:id — Partial update of user info
 	// DELETE /users/:id — Delete user
 
+	// POST /reset-password/setup - Reset password (check if a account exists + send OTP to email)
+	// POST /reset-password/verify - Check if OTP is valid
+	// POST /reset-password/update - Update password
+
 	// ACCOUNT MANAGEMENT (self-service)
 	// GET /account — Get own profile (alias for /auth/me)
 	// PATCH /account — Update own profile

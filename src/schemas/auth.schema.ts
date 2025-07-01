@@ -73,6 +73,33 @@ const auth2FADisableBody = {
 	required: ['method', 'password']
 }
 
+const authResetPasswordBody = {
+	type: 'object',
+	properties: {
+		email: { type: 'string' }
+	},
+	required: ['email']
+}
+
+const authResetPasswordVerifyBody = {
+	type: 'object',
+	properties: {
+		email: { type: 'string' },
+		code: { type: 'string' }
+	},
+	required: ['email', 'code']
+}
+
+const authResetPasswordUpdateBody = {
+	type: 'object',
+	properties: {
+		email: { type: 'string' },
+		code: { type: 'string' },
+		password: { type: 'string' }
+	},
+	required: ['email', 'code', 'password']
+}
+
 export const authRegisterSchema = {
 	body: authRegisterBody
 };
@@ -107,4 +134,16 @@ export const auth2FAVerifySchema = {
 
 export const auth2FADisableSchema = {
 	body: auth2FADisableBody
+}
+
+export const authResetPasswordSchema = {
+	body: authResetPasswordBody
+}
+
+export const authResetPasswordVerifySchema = {
+	body: authResetPasswordVerifyBody
+}
+
+export const authResetPasswordUpdateSchema = {
+	body: authResetPasswordUpdateBody
 }

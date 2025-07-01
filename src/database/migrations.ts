@@ -127,6 +127,22 @@ const MIGRATIONS = [
   				FOREIGN KEY (updated_by_user_id) REFERENCES users(id) -- ON DELETE CASCADE?
 			)
 		`
+	},
+	{
+		id: 7,
+		name: 'create-reset-password-table',
+		sql: `
+			CREATE TABLE IF NOT EXISTS reset_password (
+				id INTEGER PRIMARY KEY AUTOINCREMENT, 
+				
+				code TEXT,
+
+				expires_at DATETIME,
+				
+				user_id INTEGER NOT NULL,
+				FOREIGN KEY (user_id) REFERENCES users(id)
+			)
+		`
 	}
 ];
 

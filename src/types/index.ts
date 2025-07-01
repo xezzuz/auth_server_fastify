@@ -70,6 +70,21 @@ export interface I2FADisableRequest {
 	password: string
 }
 
+export interface IResetPasswordRequest {
+	email: string
+}
+
+export interface IResetPasswordVerifyRequest {
+	email: string,
+	code: string
+}
+
+export interface IResetPasswordUpdateRequest {
+	email: string,
+	code: string,
+	password: string
+}
+
 export interface IProfileRequest {
 	username: string
 }

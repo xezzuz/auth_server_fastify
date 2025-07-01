@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import AuthController from "../controllers/authController";
 import Authenticate from "../middleware/Authenticate";
-import { auth2FAConfirmSchema, auth2FADisableSchema, auth2FASetupSchema, auth2FAVerifySchema, authLoginSchema, authLogoutSchema, authOAuthSchema, authRefreshSchema, authRegisterSchema } from "../schemas/auth.schema";
+import { auth2FAConfirmSchema, auth2FADisableSchema, auth2FASetupSchema, auth2FAVerifySchema, authLoginSchema, authLogoutSchema, authOAuthSchema, authRefreshSchema, authRegisterSchema, authResetPasswordSchema, authResetPasswordUpdateSchema, authResetPasswordVerifySchema } from "../schemas/auth.schema";
 
 import cookie from '@fastify/cookie';
 
@@ -61,11 +61,23 @@ async function authRouter(fastify: FastifyInstance) {
 		preHandler: fastify.authenticate,
 		handler: authController.TwoFactorVerifyEndpoint.bind(authController)
 	});
-
 	fastify.post('/2fa/disable', {
 		schema: auth2FADisableSchema,
 		preHandler: fastify.authenticate,
 		handler: authController.TwoFactorVerifyEndpoint.bind(authController)
+	});
+
+	fastify.post('/reset/setup', {
+		schema: authResetPasswordSchema,
+		handler: authController.ResetPasswordSetupEndpoint.bind(authController)
+	});
+	fastify.post('/reset/verify', {
+		schema: authResetPasswordVerifySchema,
+		handler: authController.ResetPasswordVerifyEndpoint.bind(authController)
+	});
+	fastify.post('/reset/update', {
+		schema: authResetPasswordUpdateSchema,
+		handler: authController.ResetPasswordUpdateEndpoint.bind(authController)
 	});
 
 	// fastify.delete('/revoke-all', authController.RevokeAllRoute.bind(authController));

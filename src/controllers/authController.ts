@@ -1,10 +1,11 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import AuthService, { AuthConfig } from "../services/authService";
-import { CreateUserRequest, ErrorResponse, I2FAConfirmRequest, I2FASetupRequest, ILoginRequest, ILogoutRequest, IOAuthLoginRequest, IRegisterRequest } from "../types";
+import { CreateUserRequest, ErrorResponse, I2FAConfirmRequest, I2FASetupRequest, ILoginRequest, ILogoutRequest, IOAuthLoginRequest, IRegisterRequest, IResetPasswordRequest, IResetPasswordUpdateRequest, IResetPasswordVerifyRequest } from "../types";
 import bcrypt from 'bcrypt';
 import AuthErrorHandler from "./authErrorHandler";
 import { AuthError, TokenRequiredError } from "../types/auth.types";
 import TwoFactorService from "../services/twoFactorService";
+import ResetPasswordService from "../services/resetService";
 
 const DEFAULT_BCRYPT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -30,10 +31,12 @@ const authenticationConfig: AuthConfig = {
 class AuthController {
 	private authService: AuthService;
 	private twoFactorService: TwoFactorService;
+	private resetService: ResetPasswordService;
 
 	constructor() {
 		this.authService = new AuthService(authenticationConfig);
 		this.twoFactorService = new TwoFactorService();
+		this.resetService = new ResetPasswordService();
 	}
 
 	// REGISTER (NO-AUTO-LOGIN): REGISTERS USER IN DB
@@ -102,6 +105,8 @@ class AuthController {
 		try {
 			const userAgent = request.headers["user-agent"] || '';
 			const oldRefreshToken = request.cookies?.['refreshToken'];
+			console.log('======================================================================================================================================================================================================');
+			console.log('refreshToken', oldRefreshToken);
 			
 			const { newAccessToken: accessToken, newRefreshToken: refreshToken } = await this.authService.Refresh(oldRefreshToken!, userAgent, request.ip);
 			
@@ -115,7 +120,8 @@ class AuthController {
 			).send({ success: true, data: { accessToken } });
 			// reply.code(200).send({ success: true, data: { accessToken, refreshToken } });
 		} catch (err: any) {
-			reply.code(400).send({ success: false, error: err.message});
+			console.log('Error', err);
+			reply.code(401).send({ success: false, error: err.message});
 		}
 	}
 	
@@ -250,6 +256,57 @@ class AuthController {
 		}
 	}
 	// disable endpoint
+
+	async ResetPasswordSetupEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		const { email } = request.body as IResetPasswordRequest;
+
+		if (!email)
+			reply.status(400).send({ success: true, data: {} });
+
+		try {
+			const success = await this.resetService.setup(email);
+			if (success)
+				reply.code(200);
+			else
+				reply.code(404);
+		} catch (err: any) {
+			reply.code(500);
+		}
+	}
+
+	async ResetPasswordVerifyEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		const { email, code } = request.body as IResetPasswordVerifyRequest;
+
+		if (!email || !code)
+			reply.status(400).send({ success: true, data: {} });
+
+		try {
+			const success = await this.resetService.verify(email, code);
+			if (success)
+				reply.code(200);
+			else
+				reply.code(404);
+		} catch (err: any) {
+			reply.code(500);
+		}
+	}
+
+	async ResetPasswordUpdateEndpoint(request: FastifyRequest, reply: FastifyReply) {
+		const { email, code, password } = request.body as IResetPasswordUpdateRequest;
+
+		if (!email || !code || !password)
+			reply.status(400).send({ success: true, data: {} });
+
+		try {
+			const success = await this.resetService.update(email, code, password);
+			if (success)
+				reply.code(200);
+			else
+				reply.code(404);
+		} catch (err: any) {
+			reply.code(500);
+		}
+	}
 }
 
 export default AuthController;
