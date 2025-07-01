@@ -51,7 +51,7 @@ async function userRouter(fastify: FastifyInstance) {
 		handler: relationsController.blockUser.bind(relationsController)
 	});
 	// PUT		/relations/:userID/unblock - UNBLOCK
-	fastify.put('/relations/:user_id/block', {
+	fastify.put('/relations/:user_id/unblock', {
 		preHandler: fastify.authenticate,
 		schema: relationsRequestSchema,
 		handler: relationsController.unblockUser.bind(relationsController)

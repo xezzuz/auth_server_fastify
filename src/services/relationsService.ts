@@ -1,14 +1,21 @@
 import RelationsRepository from "../repositories/relationsRepository";
-import { InternalServerError } from "../types/auth.types";
+import UserRepository from "../repositories/userRepository";
+import { InternalServerError, UserNotFoundError } from "../types/auth.types";
 
 class RelationsService {
 	private relationsRepository: RelationsRepository;
+	private userRepository: UserRepository;
 
 	constructor() {
 		this.relationsRepository = new RelationsRepository();
+		this.userRepository = new UserRepository();
 	}
 
 	async sendFriendRequest(sender_id: number, receiver_id: number) {
+		const targetExists = await this.userRepository.findById(receiver_id);
+		if (!targetExists)
+			throw new UserNotFoundError();
+
 		const existingTwoWayRelation = await this.relationsRepository.findTwoWaysByUsers(
 			sender_id,
 			receiver_id
@@ -33,6 +40,10 @@ class RelationsService {
 	}
 
 	async cancelFriendRequest(sender_id: number, receiver_id: number) {
+		const targetExists = await this.userRepository.findById(receiver_id);
+		if (!targetExists)
+			throw new UserNotFoundError();
+
 		const existingTwoWayRelation = await this.relationsRepository.findTwoWaysByUsers(
 			sender_id,
 			receiver_id
@@ -48,6 +59,10 @@ class RelationsService {
 	}
 
 	async acceptFriendRequest(sender_id: number, receiver_id: number) {
+		const targetExists = await this.userRepository.findById(sender_id);
+		if (!targetExists)
+			throw new UserNotFoundError();
+
 		const existingTwoWayRelation = await this.relationsRepository.findTwoWaysByUsers(
 			sender_id,
 			receiver_id
@@ -57,7 +72,7 @@ class RelationsService {
 			throw new Error('NO PENDING REQUEST FROM THIS USER TO ACCEPT');
 		console.log('accept request');
 		console.log(existingTwoWayRelation);
-		if (existingTwoWayRelation.requester_user_id === sender_id)
+		if (existingTwoWayRelation.receiver_user_id !== receiver_id)
 			throw new Error('ONLY THE RECEIVER CAN ACCEPT REQUEST');
 
 		const changes = await this.relationsRepository.updateRelationStatus(
@@ -75,6 +90,10 @@ class RelationsService {
 	}
 	
 	async blockUser(blocker_id: number, blocked_id: number) {
+		const targetExists = await this.userRepository.findById(blocked_id);
+		if (!targetExists)
+			throw new UserNotFoundError();
+
 		const existingTwoWayRelation = await this.relationsRepository.findTwoWaysByUsers(
 			blocker_id,
 			blocked_id
@@ -98,6 +117,10 @@ class RelationsService {
 	}
 
 	async unblockUser(unblocker_id: number, unblocked_id: number) {
+		const targetExists = await this.userRepository.findById(unblocked_id);
+		if (!targetExists)
+			throw new UserNotFoundError();
+
 		const existingOneWayRelation = await this.relationsRepository.findOneWayByUsers(
 			unblocker_id,
 			unblocked_id

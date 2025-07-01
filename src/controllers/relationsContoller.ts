@@ -18,6 +18,7 @@ class RelationsController {
 
 			reply.status(201).send({ success: true, data: newRelation });
 		} catch (err: any) {
+			console.error(err);
 			const { statusCode, errorCode } = err;
 			reply.status(statusCode).send({ success: false, error: errorCode });
 		}
@@ -32,6 +33,7 @@ class RelationsController {
 
 			reply.status(204).send({ success: true, data: {} });
 		} catch (err: any) {
+			console.error(err);
 			const { statusCode, errorCode } = err;
 			reply.status(statusCode).send({ success: false, error: errorCode });
 		}
@@ -46,6 +48,7 @@ class RelationsController {
 
 			reply.status(200).send({ success: true, data: newRelation });
 		} catch (err: any) {
+			console.error(err);
 			const { statusCode, errorCode } = err;
 			reply.status(statusCode).send({ success: false, error: errorCode });
 		}
@@ -60,6 +63,7 @@ class RelationsController {
 
 			reply.status(200).send({ success: true, data: newRelation });
 		} catch (err: any) {
+			console.error(err);
 			const { statusCode, errorCode } = err;
 			reply.status(statusCode).send({ success: false, error: errorCode });
 		}
@@ -74,6 +78,7 @@ class RelationsController {
 
 			reply.status(200).send({ success: true, data: {} });
 		} catch (err: any) {
+			console.error(err);
 			const { statusCode, errorCode } = err;
 			reply.status(statusCode).send({ success: false, error: errorCode });
 		}
@@ -88,6 +93,7 @@ class RelationsController {
 
 			reply.status(200).send({ success: true, data: {} });
 		} catch (err: any) {
+			console.error(err);
 			const { statusCode, errorCode } = err;
 			reply.status(statusCode).send({ success: false, error: errorCode });
 		}
