@@ -2,10 +2,11 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import AuthService, { AuthConfig } from "../services/authService";
 import { CreateUserRequest, ErrorResponse, I2FAConfirmRequest, I2FASetupRequest, ILoginRequest, ILogoutRequest, IOAuthLoginRequest, IRegisterRequest, IResetPasswordRequest, IResetPasswordUpdateRequest, IResetPasswordVerifyRequest } from "../types";
 import bcrypt from 'bcrypt';
-import AuthErrorHandler from "./authErrorHandler";
-import { AuthError, TokenRequiredError } from "../types/auth.types";
+import AuthErrorHandler from "./authResponseFactory";
+import { TokenRequiredError } from "../types/auth.types";
 import TwoFactorService from "../services/twoFactorService";
 import ResetPasswordService from "../services/resetService";
+import AuthResponseFactory from "./authResponseFactory";
 
 const DEFAULT_BCRYPT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -45,12 +46,14 @@ class AuthController {
 			const { first_name, last_name, username, email, password } = request.body as IRegisterRequest;
 			
 			await this.authService.SignUp(first_name, last_name, username, email, password);
-			
-			reply.code(201).send({ success: true, data: {} });
-		} catch (err: any) {
-			const response = AuthErrorHandler.handle(err, true);
 
-			reply.code(response.status).send(response.body);
+			const { status, body } = AuthResponseFactory.getSuccessResponse(201, {});
+			
+			reply.code(status).send(body);
+		} catch (err: any) {
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 	
@@ -63,16 +66,20 @@ class AuthController {
 			const { user, refreshToken, accessToken } 
 				= await this.authService.LogIn(username, password, userAgent, request.ip);
 
-			reply.code(200).setCookie(
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, { user, accessToken });
+
+			reply.code(status).setCookie(
 				'refreshToken', refreshToken, {
 					path: '/',
 					httpOnly: true,
 					secure: false,
 					sameSite: 'lax'
 				}
-			).send({ success: true, data: { user, accessToken } });
+			).send(body);
 		} catch (err: any) {
-			reply.code(401).send({ success: false, error: err.message });
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 
@@ -85,8 +92,10 @@ class AuthController {
 			// console.log('cookies: ', request.cookies);
 			
 			await this.authService.LogOut(refresh_token!, userAgent, request.ip);
+
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, {});
 			
-			reply.code(200).setCookie(
+			reply.code(status).setCookie(
 				'refreshToken', '', {
 					path: '/',
 					httpOnly: true,
@@ -94,9 +103,11 @@ class AuthController {
 					sameSite: 'lax',
 					expires: new Date(0)
 				}
-			).send({ success: true, data: {} });
+			).send(body);
 		} catch (err: any) {
-			reply.code(400).send({ success: false, error: err.message});
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 	
@@ -111,37 +122,24 @@ class AuthController {
 			console.log('refreshToken', oldRefreshToken);
 			
 			const { newAccessToken: accessToken, newRefreshToken: refreshToken } = await this.authService.Refresh(oldRefreshToken!, userAgent, request.ip);
-			
-			reply.code(200).setCookie(
+
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, { accessToken });
+
+			reply.code(status).setCookie(
 				'refreshToken', refreshToken, {
 					path: '/',
 					httpOnly: true,
 					secure: false,
 					sameSite: 'lax'
 				}
-			).send({ success: true, data: { accessToken } });
+			).send(body);
 			// reply.code(200).send({ success: true, data: { accessToken, refreshToken } });
 		} catch (err: any) {
-			// console.log('Error', err);
-			reply.code(401).send({ success: false, error: err.message});
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
-	
-	// async RevokeAllEndpoint(request: FastifyRequest, reply: FastifyReply) {
-	// 	try {
-	// 		interface temp  {
-	// 			user_id: number
-	// 		};
-
-	// 		const { user_id } = request.body as temp;
-
-	// 		throw new Error('Not implemented yet');
-	// 		// await this.authService.logoutFromAllDevices(user_id);
-	// 		// reply.code(200).send({ success: true, data: {} });
-	// 	} catch (err: any) {
-	// 		reply.code(400).send({ success: false, error: err.message});
-	// 	}
-	// }
 
 	async GoogleOAuthEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		const { code } = request.query as IOAuthLoginRequest;
@@ -150,10 +148,14 @@ class AuthController {
 
 		try {
 			const { accessToken, refreshToken} = await this.authService.GoogleLogIn(code, userAgent, request.ip);
+
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, {});
+
 			reply.redirect(`http://localhost:3000/login?access_token=${accessToken}&refresh_token=${refreshToken}`);
-			// reply.code(200).send({ success: true, data });
 		} catch (err: any) {
-			reply.status(400).send({ success: false, error: err.message });
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 
@@ -164,10 +166,15 @@ class AuthController {
 
 		try {
 			const { accessToken, refreshToken} = await this.authService.IntraLogIn(code, userAgent, request.ip);
+
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, {});
+
 			reply.redirect(`http://localhost:3000/login?access_token=${accessToken}&refresh_token=${refreshToken}`);
 			// reply.code(200).send({ success: true, data });
 		} catch (err: any) {
-			reply.status(400).send({ success: false, error: err.message });
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 
@@ -193,10 +200,12 @@ class AuthController {
 				reply.status(400).send({ success: false, data: {} });
 			}
 
-		} catch (err: any) {
-			const response = AuthErrorHandler.handle(err, true);
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, {});
 
-			reply.code(response.status).send(response.body);
+		} catch (err: any) {
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 
@@ -222,10 +231,12 @@ class AuthController {
 				reply.status(400).send({ success: true, data: {} });
 			}
 
-		} catch (err: any) {
-			const response = AuthErrorHandler.handle(err, true);
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, {});
 
-			reply.code(response.status).send(response.body);
+		} catch (err: any) {
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 
@@ -251,10 +262,12 @@ class AuthController {
 				reply.status(400).send({ success: true, data: {} });
 			}
 
-		} catch (err: any) {
-			const response = AuthErrorHandler.handle(err, true);
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, {});
 
-			reply.code(response.status).send(response.body);
+		} catch (err: any) {
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 	// disable endpoint
@@ -271,8 +284,12 @@ class AuthController {
 				reply.code(200);
 			else
 				reply.code(404);
+
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, {});
 		} catch (err: any) {
-			reply.code(500);
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 
@@ -288,8 +305,12 @@ class AuthController {
 				reply.code(200);
 			else
 				reply.code(404);
+
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, {});
 		} catch (err: any) {
-			reply.code(500);
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 
@@ -305,8 +326,12 @@ class AuthController {
 				reply.code(200);
 			else
 				reply.code(404);
+
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, {});
 		} catch (err: any) {
-			reply.code(500);
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 }

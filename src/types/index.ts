@@ -138,3 +138,8 @@ export interface ErrorResponse {
 		details?: any;
 	}
 }
+
+export interface SuccessResponse {
+	success: boolean,
+	data: any
+}

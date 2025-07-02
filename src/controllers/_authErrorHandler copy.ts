@@ -1,6 +1,6 @@
 import { TokenExpiredError } from "jsonwebtoken";
 import { ErrorResponse } from "../types";
-import { AuthError, FormError, InvalidCredentialsError, PasswordLengthError, SessionExpiredError, SessionNotFoundError, SessionRevokedError, TokenInvalidError, TokenRequiredError, UserAlreadyExistsError, UserNotFoundError, UsernameLengthError, WeakPasswordError, _2FANotFound, _2FANotEnabled, _2FAAlreadyEnabled, _2FAInvalidCode } from "../types/auth.types";
+import { AuthError, InvalidCredentialsError, PasswordLengthError, SessionExpiredError, SessionNotFoundError, SessionRevokedError, TokenInvalidError, TokenRequiredError, UserAlreadyExistsError, UserNotFoundError, UsernameLengthError, WeakPasswordError, _2FANotFound, _2FANotEnabled, _2FAAlreadyEnabled, _2FAInvalidCode } from "../types/auth.types";
 
 // export interface ErrorResponse {
 // 	success: boolean,
@@ -22,7 +22,6 @@ class AuthErrorHandler {
 		});
 
 		switch(true) {
-			case error instanceof FormError:
 			case error instanceof UsernameLengthError:
 			case error instanceof PasswordLengthError:
 			case error instanceof WeakPasswordError:
