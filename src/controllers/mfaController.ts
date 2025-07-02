@@ -3,7 +3,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { I2FASetupRequest, I2FAConfirmRequest, I2FADisableRequest } from "../types";
 import AuthResponseFactory from "./authResponseFactory";
 
-class _2faController {
+class MFAController {
 	private twoFactorService: TwoFactorService;
 
 	constructor() {
@@ -106,4 +106,4 @@ class _2faController {
 	// disable endpoint
 }
 
-export default _2faController;
+export default MFAController;

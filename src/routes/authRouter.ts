@@ -5,38 +5,43 @@ import { auth2FAConfirmSchema, auth2FADisableSchema, auth2FASetupSchema, auth2FA
 
 import cookie from '@fastify/cookie';
 import { db } from "../database";
+import MFAController from "../controllers/mfaController";
+import ResetController from "../controllers/resetController";
 
 async function authRouter(fastify: FastifyInstance) {
 	const authController: AuthController = new AuthController();
+	const mfaController: MFAController = new MFAController();
+	const resetController: ResetController = new ResetController();
 
 	fastify.decorate('authenticate', Authenticate); // auth middleware for protected routes
 	fastify.decorate('requireAuth', { preHandler: fastify.authenticate }); // preHandler hook
 	fastify.decorateRequest('user', null);
 	fastify.register(cookie);
 
-	// AUTH ROUTES
+	/*-------------------------------- Local Authentication --------------------------------*/
 	fastify.post('/register', {
 		schema: authRegisterSchema,
 		handler: authController.RegisterEndpoint.bind(authController)
 	});
-
+	
 	fastify.post('/login', {
 		schema: authLoginSchema,
 		handler: authController.LoginEndpoint.bind(authController)
 	});
-
+	
 	fastify.post('/logout', {
 		schema: authLogoutSchema,
 		preHandler: fastify.authenticate,
 		handler: authController.LogoutEndpoint.bind(authController)
 	});
-
+	
 	fastify.get('/refresh', {
 		schema: authRefreshSchema,
 		handler: authController.RefreshEndpoint.bind(authController)
 	});
+	
 
-	// REMOTE AUTH (GOOGLE + 42_INTRA)
+	/*-------------------------------- Remote Authentication --------------------------------*/
 	fastify.get('/google/callback', {
 		schema: authOAuthSchema,
 		handler: authController.GoogleOAuthEndpoint.bind(authController)
@@ -46,39 +51,42 @@ async function authRouter(fastify: FastifyInstance) {
 		handler: authController.IntraOAuthEndpoint.bind(authController)
 	});
 
-	// 2FA (OTP / TOTP)
+
+	/*----------------------------- Multi-Factor Authentication -----------------------------*/
 	fastify.post('/2fa/setup', {
 		schema: auth2FASetupSchema,
 		preHandler: fastify.authenticate,
-		handler: authController.TwoFactorSetupEndpoint.bind(authController)
+		handler: mfaController.TwoFactorSetupEndpoint.bind(mfaController)
 	});
 	fastify.post('/2fa/confirm', {
 		schema: auth2FAConfirmSchema,
 		preHandler: fastify.authenticate,
-		handler: authController.TwoFactorConfirmEndpoint.bind(authController)
+		handler: mfaController.TwoFactorConfirmEndpoint.bind(mfaController)
 	});
 	fastify.post('/2fa/verify', {
 		schema: auth2FAVerifySchema,
 		preHandler: fastify.authenticate,
-		handler: authController.TwoFactorVerifyEndpoint.bind(authController)
+		handler: mfaController.TwoFactorVerifyEndpoint.bind(mfaController)
 	});
 	fastify.post('/2fa/disable', {
 		schema: auth2FADisableSchema,
 		preHandler: fastify.authenticate,
-		handler: authController.TwoFactorVerifyEndpoint.bind(authController)
+		handler: mfaController.TwoFactorVerifyEndpoint.bind(mfaController)
 	});
+	
 
+	/*------------------------------------ Reset Password ------------------------------------*/
 	fastify.post('/reset/setup', {
 		schema: authResetPasswordSchema,
-		handler: authController.ResetPasswordSetupEndpoint.bind(authController)
+		handler: resetController.ResetPasswordSetupEndpoint.bind(resetController)
 	});
 	fastify.post('/reset/verify', {
 		schema: authResetPasswordVerifySchema,
-		handler: authController.ResetPasswordVerifyEndpoint.bind(authController)
+		handler: resetController.ResetPasswordVerifyEndpoint.bind(resetController)
 	});
 	fastify.post('/reset/update', {
 		schema: authResetPasswordUpdateSchema,
-		handler: authController.ResetPasswordUpdateEndpoint.bind(authController)
+		handler: resetController.ResetPasswordUpdateEndpoint.bind(resetController)
 	});
 
 	// fastify.delete('/revoke-all', authController.RevokeAllRoute.bind(authController));
