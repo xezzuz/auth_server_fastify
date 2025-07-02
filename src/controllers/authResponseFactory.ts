@@ -13,7 +13,7 @@ import { AuthError, InvalidCredentialsError, PasswordLengthError, SessionExpired
 
 class AuthResponseFactory {
 
-	static getErrorResponse(error: Error, isDevelopment: boolean = false) : { status: number, body: ErrorResponse } {
+	static getErrorResponse(error: Error, isDevelopment: boolean = true) : { status: number, body: ErrorResponse } {
 		console.error(`Auth Error: `, {
 			type: error.name,
 			message: error.message,

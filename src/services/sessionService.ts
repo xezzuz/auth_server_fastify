@@ -55,7 +55,7 @@ class SessionManager {
 		
 		const isFound = await this.sessionRepository.findOne(session_id, user_id);
 
-		if (!isFound)
+		if (isFound === null)
 			throw new SessionNotFoundError();
 		
 		await this.sessionRepository.update(
@@ -80,21 +80,21 @@ class SessionManager {
 		console.log('DB Session: ');
 		console.log(isFound);
 
-		if (!isFound) // CLEANED
+		if (isFound === null) // CLEANED
 			throw new SessionNotFoundError();
 
-		if (isFound.version !== version) // RE-USE
+		if (isFound.version !== version) 				// RE-USE
 			throw new SessionRevokedError();
-		if (isFound.is_revoked) // EXPIRED
+		if (isFound.is_revoked)							// EXPIRED
 			throw new SessionRevokedError();
-		if ((Date.now() / 1000) > isFound.expires_at) // EXPIRED
+		if ((Date.now() / 1000) > isFound.expires_at)	// EXPIRED
 			throw new SessionExpiredError();
 
-		if (!this.sessionConfig.allowIpChange && isFound.ip_address !== ip_address) // IP CHANGE
+		if (!this.sessionConfig.allowIpChange && isFound.ip_address !== ip_address)					// IP CHANGE
 			throw new SessionRevokedError();
-		if (!this.sessionConfig.allowDeviceChange && isFound.device_name !== device_name) // DEVICE CHANGE
+		if (!this.sessionConfig.allowDeviceChange && isFound.device_name !== device_name)			// DEVICE CHANGE
 			throw new SessionRevokedError();
-		if (!this.sessionConfig.allowBrowserChange && isFound.browser_version !== browser_version) // BROWSER CHANGE
+		if (!this.sessionConfig.allowBrowserChange && isFound.browser_version !== browser_version)	// BROWSER CHANGE
 			throw new SessionRevokedError();
 	}
 

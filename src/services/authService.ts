@@ -9,6 +9,7 @@ import { ISessionFingerprint } from "../types";
 import { UAParser } from 'ua-parser-js';
 import axios from "axios";
 import 'dotenv/config';
+import { z } from 'zod';
 
 // TODO
 	// VERIFY THE EXISTENCE OF ALL THOSE ENV VARS
@@ -53,7 +54,7 @@ class AuthService {
 	}
 
 	async SignUp(first_name: string, last_name: string, username: string, email: string, password: string) : Promise<void> {
-		this.validateUserInput({ first_name, last_name, email, username, password }); // TODO
+		this.validateRegisterForm(username, password, email, first_name, last_name);
 
 		if (await this.userRepository.findByUsername(username) != null)
 			throw new UserAlreadyExistsError('Username');
@@ -76,10 +77,6 @@ class AuthService {
 	async LogIn(username: string, password: string, userAgent: string, ip: string) : Promise<{ user: Omit<User, 'password'>, accessToken: JWT_TOKEN, refreshToken: JWT_TOKEN }> {
 		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
 
-		// if (!username || !username.trim())
-		// 	throw new FormFieldMissing('Username');
-		// if (!password || !password.trim())
-		// 	throw new FormFieldMissing('Password');
 		const existingUser = await this.userRepository.findByUsername(username);
 		const isValidPassword = 
 			await bcrypt.compare(password, existingUser ? existingUser.password : this.authConfig.bcryptDummyHash);
@@ -105,6 +102,63 @@ class AuthService {
 		return { user: userWithoutPassword, accessToken, refreshToken };
 	}
 
+	async LogOut(refreshToken: string, userAgent: string, ip: string) : Promise<void> {
+		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
+
+		let payload: JWT_REFRESH_PAYLOAD;
+	
+		try {
+			payload = await this.authUtils.verifyRefreshToken(refreshToken);
+		} catch (err) {
+			await this.sessionManager.revokeSession(refreshToken, 'inactivity');
+			throw err; // (TokenInvalid/Expired) // delete related session
+		}
+
+		await this.sessionManager.validateSession(
+			refreshToken,
+			currentSessionFingerprint
+		);
+
+		await this.sessionManager.revokeSession(
+			refreshToken,
+			'logout'
+		);
+	}
+
+	async Refresh(refreshToken: string, userAgent: string, ip: string) : Promise<{ newAccessToken: JWT_TOKEN, newRefreshToken: JWT_TOKEN }> {
+		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
+		
+		let payload: JWT_REFRESH_PAYLOAD;
+
+		try {
+			payload = await this.authUtils.verifyRefreshToken(refreshToken);
+		} catch (err) {
+			await this.sessionManager.revokeSession(refreshToken, 'inactivity');
+			throw err; // (TokenInvalid/Expired) // delete related session
+		}
+		
+		await this.sessionManager.validateSession(
+			refreshToken,
+			currentSessionFingerprint
+		);
+		
+		const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await this.authUtils.generateTokenPair(
+			payload.sub,
+			this.authConfig.accessTokenExpiry,
+			this.authConfig.refreshTokenExpiry,
+			payload.session_id,
+			payload.version + 1
+		);
+		
+		await this.sessionManager.refreshSession(
+			newRefreshToken,
+			currentSessionFingerprint
+		);
+
+		return { newAccessToken, newRefreshToken };
+	}
+
+	// TO CHECK
 	async GoogleLogIn(code: string, userAgent: string, ip: string) : Promise<{ accessToken: JWT_TOKEN, refreshToken: JWT_TOKEN }> {
 		try {
 			const { id_token } = await this.getGoogleOAuthTokens(code);
@@ -150,6 +204,7 @@ class AuthService {
 		}
 	}
 
+	// TO CHECK
 	async IntraLogIn(code: string, userAgent: string, ip: string) : Promise<{ accessToken: JWT_TOKEN, refreshToken: JWT_TOKEN }> {
 		try {
 			const { access_token } = await this.getIntraOAuthTokens(code);
@@ -193,101 +248,38 @@ class AuthService {
 		}
 	}
 
-	async LogOut(refreshToken: string, userAgent: string, ip: string) : Promise<void> {
-		// const refreshToken = this.getBearerToken(authHeader);
-		// console.log('refreshToken', refreshToken);
-		// const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
+	private validateRegisterForm(username: string, password: string, email: string, first_name: string, last_name: string) {
+		const registerSchema = z.object({
+			first_name: z.string()
+			  .min(2, "First name must be at least 2 characters")
+			  .max(10, "First name must be at most 10 characters")
+			  .regex(/^[A-Za-z]+$/, "First name must contain only letters"),
+			
+			last_name: z.string()
+			  .min(2, "Last name must be at least 2 characters")
+			  .max(10, "Last name must be at most 10 characters")
+			  .regex(/^[A-Za-z]+$/, "Last name must contain only letters"),
+			
+			username: z.string()
+			  .min(3, "Username must be at least 3 characters")
+			  .max(50, "Username must be at least 50 characters")
+			  .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+		  
+			email: z.string()
+			  .email("Invalid email address"),
+		  
+			password: z.string()
+			  .min(8, "Password must be at least 8 characters")
+			  .regex(/(?=.*[a-z])/, "Password must contain a lowercase letter")
+			  .regex(/(?=.*[A-Z])/, "Password must contain an uppercase letter")
+			  .regex(/(?=.*\d)/, "Password must contain a digit")
+		});
 
-		// let payload: JWT_REFRESH_PAYLOAD;
-	
-		// try {
-		// 	payload = await this.authUtils.verifyRefreshToken(refreshToken);
-		// } catch (err) {
-		// 	if (err instanceof jwt.JsonWebTokenError)
-		// 		throw new TokenInvalidError();
-		// 	else {
-		// 		this.sessionManager.revokeSession(refreshToken, 'inactivity');
-		// 		throw new TokenExpiredError('Refresh'); // delete related session
-		// 	}
-		// }
-
-		// await this.sessionManager.validateSession(
-		// 	refreshToken,
-		// 	currentSessionFingerprint
-		// );
-
-		await this.sessionManager.revokeSession(
-			refreshToken,
-			'logout'
-		);
-	}
-
-	async Refresh(refreshToken: string, userAgent: string, ip: string) : Promise<{ newAccessToken: JWT_TOKEN, newRefreshToken: JWT_TOKEN }> {
-		// const refreshToken = this.getBearerToken(authHeader);
-		const currentSessionFingerprint = this.getFingerprint(userAgent, ip);
-		
-		let payload: JWT_REFRESH_PAYLOAD;
-
-		try {
-			payload = await this.authUtils.verifyRefreshToken(refreshToken);
-		} catch (err) {
-			if (err instanceof jwt.JsonWebTokenError)
-				throw new TokenInvalidError();
-			else {
-				await this.sessionManager.revokeSession(refreshToken, 'inactivity');
-				throw new TokenExpiredError('Refresh'); // delete related session
-			}
+		const validationResult = registerSchema.safeParse({ first_name, last_name, username, password, email });
+		if (!validationResult.success) {
+			const errors = validationResult.error.flatten();
+			throw new FormError(undefined, errors.fieldErrors);
 		}
-		
-		await this.sessionManager.validateSession(
-			refreshToken,
-			currentSessionFingerprint
-		);
-		
-		const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await this.authUtils.generateTokenPair(
-			payload.sub,
-			this.authConfig.accessTokenExpiry,
-			this.authConfig.refreshTokenExpiry,
-			payload.session_id,
-			payload.version + 1
-		);
-		
-		await this.sessionManager.refreshSession(
-			newRefreshToken,
-			currentSessionFingerprint
-		);
-
-		return { newAccessToken, newRefreshToken };
-	}
-
-	// async logoutFromAllDevices(user_id: number) {
-	// 	return await this.authRepository.revokeAllRefreshTokens(user_id);
-	// }
-
-	private validateUserInput(userData: IRegisterRequest) : void {
-		const { username, password, email, first_name, last_name } = userData;
-
-		// if (!username || !username.trim())
-		// 	throw new FormFieldMissing('Username');
-		// if (!password || !password.trim())
-		// 	throw new FormFieldMissing('Password');
-		// if (!email || !email.trim())
-		// 	throw new FormFieldMissing('Email');
-		// if (!first_name || !first_name.trim())
-		// 	throw new FormFieldMissing('First_name');
-		// if (!last_name || !last_name.trim())
-		// 	throw new FormFieldMissing('Last_name');
-
-		// TODO
-			// ADD VALIDATION FOR OTHER FIELDS (IMPORT FROM FRONTEND)
-		if (username.length < 4 || username.length > 20)
-			throw new UsernameLengthError();
-
-		if (password.length < 8)
-			throw new PasswordLengthError();
-
-		if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password))
-			throw new WeakPasswordError();
 	}
 
 	private getBearerToken(authHeader: string | undefined) : string {
@@ -323,6 +315,7 @@ class AuthService {
 		return fingerprint;
 	}
 
+	// TO CHECK
 	private async getGoogleOAuthTokens(code: string): Promise<any> {
 		const body = {
 			code,
@@ -337,6 +330,7 @@ class AuthService {
 		return data;
 	}
 
+	// TO CHECK
 	private GoogleOAuthTokenToData(data: any) : ISQLCreateUser {
 		return {
 			email: data.email,
@@ -350,6 +344,7 @@ class AuthService {
 
 	// TODO
 		// ADD STATE FOR CSRF
+	// TO CHECK
 	private async getIntraOAuthTokens(code: string): Promise<any> {
 		const body = {
 			code,
@@ -364,6 +359,7 @@ class AuthService {
 		return data;
 	}
 
+	// TO CHECK
 	private async IntraOAuthTokenToData(access_token: string) : Promise<ISQLCreateUser> {
 		const { data } = await axios.get(`https://api.intra.42.fr/v2/me?access_token=${access_token}`);
 

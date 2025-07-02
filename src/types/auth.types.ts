@@ -14,11 +14,11 @@ export abstract class AuthError extends Error {
 }
 
 // FORM (REGISTER)
-// export class FormError extends AuthError {
-// 	constructor(message: string = 'Required fields are missing', details: any = {}) {
-// 		super(message, 400, 'AUTH_FORM_INCOMPLETE', details);
-// 	}
-// }
+export class FormError extends AuthError {
+	constructor(message: string = 'Invalid form values', details: any = {}) {
+		super(message, 400, 'AUTH_FORM_INVALID', details);
+	}
+}
 
 export class FormFieldMissing extends AuthError {
 	public readonly field: string;
