@@ -39,7 +39,7 @@ async function authRouter(fastify: FastifyInstance) {
 		schema: authRefreshSchema,
 		handler: authController.RefreshEndpoint.bind(authController)
 	});
-	
+
 
 	/*-------------------------------- Remote Authentication --------------------------------*/
 	fastify.get('/google/callback', {
@@ -118,6 +118,29 @@ async function authRouter(fastify: FastifyInstance) {
 		console.log('getting all that exists (one match): ', all_1);
 		console.log('getting all that doesnt exists (no match): ', all_2);
 		console.log('getting all that exists (multiple matches): ', all_3);
+	});
+
+	fastify.get('/run-sql', async () => {
+		// await db.run(`DROP TABLE matches`);
+		const result = await db.run(`INSERT INTO matches (
+			player_home_score,
+			player_away_score,
+			game_type,
+			started_at,
+			finished_at,
+			player_home_id,
+			player_away_id
+		) VALUES 
+		(0, 3, 'TICTACTOE', '2025-07-03 14:00:00', '2025-07-03 14:02:00', 2, 8),
+		(21, 10, 'PING PONG', '2025-07-04 09:00:00', '2025-07-04 09:35:00', 3, 2),
+		(2, 1, 'TICTACTOE', '2025-07-04 10:00:00', '2025-07-04 10:03:00', 8, 2),
+		(19, 21, 'PING PONG', '2025-07-05 08:45:00', '2025-07-05 09:25:00', 3, 2),
+		(3, 2, 'TICTACTOE', '2025-07-05 11:00:00', '2025-07-05 11:04:00', 3, 8),
+		(21, 17, 'PING PONG', '2025-07-06 07:30:00', '2025-07-06 08:15:00', 2, 3),
+		(1, 3, 'TICTACTOE', '2025-07-06 12:00:00', '2025-07-06 12:05:00', 2, 3),
+		(15, 21, 'PING PONG', '2025-07-07 09:00:00', '2025-07-07 09:50:00', 8, 2),
+		(3, 0, 'TICTACTOE', '2025-07-07 13:00:00', '2025-07-07 13:02:00', 8, 3),
+		(21, 12, 'PING PONG', '2025-07-08 08:00:00', '2025-07-08 08:40:00', 2, 3);`);
 	});
 }
 

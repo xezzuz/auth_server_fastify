@@ -137,7 +137,16 @@ class AuthController {
 		} catch (err: any) {
 			const { status, body } = AuthResponseFactory.getErrorResponse(err);
 
-			reply.code(status).send(body);
+			reply.code(status).setCookie(
+				'refreshToken', '', {
+					path: '/',
+					httpOnly: true,
+					secure: false,
+					sameSite: 'lax',
+					expires: new Date(0)
+				}
+			).send(body);
+			// reply.code(status).send(body);
 		}
 	}
 

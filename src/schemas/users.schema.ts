@@ -33,18 +33,18 @@ const relationsRequestParams = {
 const statsRequestParams = {
 	type: 'object',
 	properties: {
-		user_id: { type: 'string' }
+		username: { type: 'string' }
 	},
-	required: ['user_id'],
+	required: ['username'],
 	additionalProperties: false
 }
 
 const matchesRequestParams = {
 	type: 'object',
 	properties: {
-		user_id: { type: 'string' }
+		username: { type: 'string' }
 	},
-	required: ['user_id'],
+	required: ['username'],
 	additionalProperties: false
 }
 

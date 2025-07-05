@@ -8,6 +8,7 @@ export interface User {
 	username: string,
 	password: string,
 	bio: string,
+	role: string,
 	avatar_url: string,
 	created_at: string,
 	updated_at: string
@@ -94,11 +95,11 @@ export interface IRelationsRequest {
 }
 
 export interface IStatsRequest {
-	user_id: string
+	username: string
 }
 
 export interface IMatchesRequest {
-	user_id: string
+	username: string
 }
 
 // export interface RefreshRequest {

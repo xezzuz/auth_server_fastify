@@ -200,6 +200,28 @@ class MatchesRepository {
 	// 		throw new InternalServerError();
 	// 	}
 	// }
+
+	async getMatchesPageByUser_(user_id: number, page: number) : Promise<any | null> {
+		const offset = (page - 1) * 5;
+		try {
+			const results = await db.all(`
+				SELECT	uh.username AS player_home_username,
+						uh.avatar_url AS player_home_avatar,
+						ua.username AS player_away_username,
+						ua.avatar_url AS player_away_avatar,
+						m.*
+					FROM matches m
+				JOIN users uh ON (m.player_home_id = uh.id)
+				JOIN users ua ON (m.player_away_id = ua.id)
+				WHERE (m.player_home_id = ? OR m.player_away_id = ?)`,
+				[user_id, user_id]
+			);
+			return results;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
+	}
 }
 
 export default MatchesRepository;

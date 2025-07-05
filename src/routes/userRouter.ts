@@ -98,16 +98,22 @@ async function userRouter(fastify: FastifyInstance) {
 		handler: statsController.MyStats.bind(statsController)
 	});
 
-	fastify.get('/:user_id/stats', {
+	fastify.get('/:username/profile', {
+		schema: statsRequestSchema,
+		preHandler: fastify.authenticate,
+		handler: statsController.UserProfile.bind(statsController)
+	});
+
+	fastify.get('/:username/stats', {
 		schema: statsRequestSchema,
 		preHandler: fastify.authenticate,
 		handler: statsController.UserStats.bind(statsController)
 	});
 
-	fastify.get('/:user_id/matches', {
+	fastify.get('/:username/matches', {
 		schema: matchesRequestSchema,
 		preHandler: fastify.authenticate,
-		handler: statsController.UserStats.bind(statsController)
+		handler: statsController.UserMatches.bind(statsController)
 	});
 
 	// USER MANAGEMENT (admin or self-service)

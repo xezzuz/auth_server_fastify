@@ -14,7 +14,23 @@ class StatsController {
 			// const { user_id: target_id } = request.params as IStatsRequest;
 			const user_id = request.user?.sub;
 
-			const stats = await this.statsService.getUserStats(user_id!);
+			// const stats = await this.statsService.getUserStats(user_id!);
+			// console.log('myStats: ', stats);
+
+			// reply.status(201).send({ success: true, data: stats });
+		} catch (err: any) {
+			console.error(err);
+			const { statusCode, errorCode } = err;
+			reply.status(statusCode).send({ success: false, error: errorCode });
+		}
+	}
+
+	async UserProfile(request: FastifyRequest, reply: FastifyReply) {
+		try {
+			const { username } = request.params as IStatsRequest;
+			// const user_id = request.user?.sub;
+
+			const stats = await this.statsService.getUserProfile(username);
 
 			reply.status(201).send({ success: true, data: stats });
 		} catch (err: any) {
@@ -26,10 +42,10 @@ class StatsController {
 
 	async UserStats(request: FastifyRequest, reply: FastifyReply) {
 		try {
-			const { user_id } = request.params as IStatsRequest;
+			const { username } = request.params as IStatsRequest;
 			// const user_id = request.user?.sub;
 
-			const stats = await this.statsService.getUserStats(parseInt(user_id));
+			const stats = await this.statsService.getUserPerformance(username);
 
 			reply.status(201).send({ success: true, data: stats });
 		} catch (err: any) {
@@ -41,11 +57,11 @@ class StatsController {
 
 	async UserMatches(request: FastifyRequest, reply: FastifyReply) {
 		try {
-			const { user_id } = request.params as IMatchesRequest;
+			const { username } = request.params as IMatchesRequest;
 			const { page } = request.query as { page: string };
 			// const user_id = request.user?.sub;
 
-			const matchesPage = await this.statsService.getUserMatches(parseInt(user_id)!, parseInt(page)!);
+			const matchesPage = await this.statsService.getUserMatches(username!, parseInt(page)!);
 
 			reply.status(201).send({ success: true, data: matchesPage });
 		} catch (err: any) {
