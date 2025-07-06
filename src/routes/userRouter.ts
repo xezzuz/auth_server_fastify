@@ -71,7 +71,7 @@ async function userRouter(fastify: FastifyInstance) {
 		handler: userController.MyProfileEndpoint.bind(userController)
 	});
 
-	// GET /users/me
+	// GET /users/:username
 	fastify.get('/:username', {
 		schema: userProfileSchema,
 		preHandler: fastify.authenticate,
@@ -79,11 +79,11 @@ async function userRouter(fastify: FastifyInstance) {
 	});
 	
 	// PUT /users/me
-	fastify.put('/me', {
-		schema: userUpdateSchema,
-		preHandler: fastify.authenticate,
-		handler: userController.UpdateMyProfileEndpoint.bind(userController)
-	});
+	// fastify.put('/me', {
+	// 	schema: userUpdateSchema,
+	// 	preHandler: fastify.authenticate,
+	// 	handler: userController.UpdateMyProfileEndpoint.bind(userController)
+	// });
 	
 	// DELETE /users/me
 	// fastify.get('/profile/:username', {
@@ -92,11 +92,11 @@ async function userRouter(fastify: FastifyInstance) {
 	// 	handler: userController.UserProfileEndpoint.bind(userController)
 	// });
 
-	fastify.get('/me/stats', {
-		// schema: userUpdateSchema,
-		preHandler: fastify.authenticate,
-		handler: statsController.MyStats.bind(statsController)
-	});
+	// fastify.get('/me/stats', {
+	// 	// schema: userUpdateSchema,
+	// 	preHandler: fastify.authenticate,
+	// 	handler: statsController.MyStats.bind(statsController)
+	// });
 
 	fastify.get('/:username/profile', {
 		schema: statsRequestSchema,
@@ -104,13 +104,13 @@ async function userRouter(fastify: FastifyInstance) {
 		handler: statsController.UserProfile.bind(statsController)
 	});
 
-	fastify.get('/:username/stats', {
+	fastify.get('/:username/performance', {
 		schema: statsRequestSchema,
 		preHandler: fastify.authenticate,
 		handler: statsController.UserStats.bind(statsController)
 	});
 
-	fastify.get('/:username/matches', {
+	fastify.get('/:username/games', {
 		schema: matchesRequestSchema,
 		preHandler: fastify.authenticate,
 		handler: statsController.UserMatches.bind(statsController)

@@ -42,6 +42,7 @@ interface IGame {
 }
 
 interface IGameHistory {
+	game_id: number,
 	game_type: string,
 	player_home: {
 		username: string,
@@ -136,6 +137,7 @@ class StatsService {
 
 	private formatUserMatchHistory(matches: any) : IGameHistory[] {
 		const result: IGameHistory[] = matches.map((g: any) => ({
+			game_id: g.id,
 			game_type: g.game_type,
 			player_home: {
 				username: g.player_home_username,
@@ -177,7 +179,7 @@ class StatsService {
 		const result: IUserPerformance = {
 			level: stats.level,
 			xp: stats.total_xp,
-			rank: stats.level,
+			rank: stats.level, // TODO
 			win_rate: parseFloat(gWinRate.toFixed(2)),
 			current_streak: stats.current_streak,
 			longest_streak: stats.longest_streak,
