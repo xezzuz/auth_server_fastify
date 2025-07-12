@@ -3,6 +3,7 @@ import UserService from "../services/userService";
 import UserRepository from "../repositories/userRepository";
 import { IProfileRequest } from "../types";
 import { AuthError, UserNotFoundError } from "../types/auth.types";
+import AuthResponseFactory from "./authResponseFactory";
 
 class UserController {
 	private userService: UserService;
@@ -37,41 +38,79 @@ class UserController {
 			reply.status(500).send({ success: false, data: {} })
 		}
 	}
-	
-	async MyProfileEndpoint(request: FastifyRequest, reply: FastifyReply) {
-		console.log('request auth injected: ', request.user);
+
+	async fetchMe(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const user_id = request.user?.sub;
 
-			const user = await this.userService.MyProfile(user_id!);
+			const userProfile = await this.userService.fetchMe(user_id!);
 
-			reply.status(200).send({ success: true, data: user });
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, userProfile);
+
+			reply.code(status).send(body);
 		} catch (err: any) {
-			const { statusCode, errorCode } = err;
-			reply.status(statusCode).send({ success: false, error: errorCode });
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 
-	async UserProfileEndpoint(request: FastifyRequest, reply: FastifyReply) {
+	async getUser(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const { username } = request.params as IProfileRequest;
 			const user_id = request.user?.sub;
 
-			const userAndFriendshipStatus = await this.userService.UserProfile(user_id!, username);
+			const userProfile = await this.userService.getUser(user_id!, username);
 
-			reply.status(200).send({ success: true, data: userAndFriendshipStatus });
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, userProfile);
+
+			reply.code(status).send(body);
 		} catch (err: any) {
-			const { statusCode, errorCode } = err;
-			reply.status(statusCode).send({ success: false, error: errorCode });
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
 		}
 	}
 
-	async UpdateMyProfileEndpoint(request: FastifyRequest, reply: FastifyReply) {
+	async getUserStats(request: FastifyRequest, reply: FastifyReply) {
+		try {
+			const user_id = request.user?.sub;
+
+			const userStats = await this.userService.getUserStats(user_id!);
+
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, userStats);
+
+			reply.code(status).send(body);
+		} catch (err: any) {
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
+		}
+	}
+
+	async getUserMatches(request: FastifyRequest, reply: FastifyReply) {
+		try {
+			const { page } = request.query as { page: number };
+			const user_id = request.user?.sub;
+
+			const userStats = await this.userService.getUserMatches(user_id!, page);
+
+			const { status, body } = AuthResponseFactory.getSuccessResponse(200, userStats);
+
+			reply.code(status).send(body);
+		} catch (err: any) {
+			const { status, body } = AuthResponseFactory.getErrorResponse(err);
+
+			reply.code(status).send(body);
+		}
+	}
+
+	async updateUser(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const user_id = request.user?.sub;
 			const updates = request.body;
 
-			const newUser = await this.userService.UpdateUserProfile(user_id!, updates);
+			const newUser = await this.userService.updateUser(user_id!, updates);
 
 			reply.status(200).send({ success: true, data: newUser });
 		} catch (err: any) {
@@ -81,6 +120,9 @@ class UserController {
 	}
 
 	// DELETE USER
+	async deleteUser(request: FastifyRequest, reply: FastifyReply) {
+
+	}
 }
 
 export default UserController;

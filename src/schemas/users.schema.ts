@@ -61,6 +61,11 @@ export const userProfileSchema = {
 	params: userProfileParams
 }
 
+export const userMatchesSchema = {
+	params: userProfileParams,
+	querystring: matchesRequestQuery
+}
+
 export const userUpdateSchema = {
 	body: userUpdateBody
 }

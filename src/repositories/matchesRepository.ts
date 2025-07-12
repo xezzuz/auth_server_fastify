@@ -1,36 +1,46 @@
+import { time } from "console";
 import { db } from "../database";
 import { InternalServerError } from "../types/auth.types";
 
 class MatchesRepository {
-	private SQLCTE = `
-		WITH user_matches AS (
-			SELECT
-				m.id AS match_id,
-				m.started_at,
-				m.finished_at,
-				CASE WHEN m.player_home_id = ? THEN m.player_home_score ELSE m.player_away_score END AS user_score,
-				CASE WHEN m.player_home_id = ? THEN m.player_away_score ELSE m.player_home_score END AS opp_score,
-				CASE WHEN m.player_home_id = ? THEN m.player_away_id ELSE m.player_home_id END AS opponent_id,
-				(strftime('%s', m.finished_at) - strftime('%s', m.started_at)) AS duration,
-				CASE
-					WHEN (m.player_home_id = ? AND m.player_home_score > m.player_away_score) 
-					OR (m.player_away_id = ? AND m.player_away_score > m.player_home_score) THEN 'W'
-					WHEN (m.player_home_id = ? AND m.player_home_score < m.player_away_score) 
-					OR (m.player_away_id = ? AND m.player_away_score < m.player_home_score) THEN 'L'
-					ELSE 'D'
-				END AS outcome,
-				u.username AS opponent_username
-			FROM matches m
-			JOIN users u
-			ON u.id = 
+	private TMPTABLE = `
+		CREATE TEMP TABLE tmp_user_matches AS
+			WITH user_matches AS (
+				SELECT
+					m.id AS match_id,
+					m.started_at,
+					m.finished_at,
+					CASE WHEN m.player_home_id = ? THEN m.player_home_score ELSE m.player_away_score END AS user_score,
+					CASE WHEN m.player_home_id = ? THEN m.player_away_score ELSE m.player_home_score END AS opp_score,
+					CASE WHEN m.player_home_id = ? THEN m.player_away_id ELSE m.player_home_id END AS opponent_id,
+					(strftime('%s', m.finished_at) - strftime('%s', m.started_at)) AS duration,
 					CASE
-						WHEN m.player_home_id = ? THEN m.player_away_id
-						ELSE m.player_home_id
-					END
-			WHERE m.player_home_id = ? OR m.player_away_id = ?
-		)
-		CREATE TEMP TABLE tmp_user_matches AS SELECT * FROM user_matches
+						WHEN (m.player_home_id = ? AND m.player_home_score > m.player_away_score) 
+						OR (m.player_away_id = ? AND m.player_away_score > m.player_home_score) THEN 'W'
+						WHEN (m.player_home_id = ? AND m.player_home_score < m.player_away_score) 
+						OR (m.player_away_id = ? AND m.player_away_score < m.player_home_score) THEN 'L'
+						ELSE 'D'
+					END AS outcome,
+					u.username AS opponent_username
+				FROM matches m
+				JOIN users u
+				ON u.id = CASE
+							WHEN m.player_home_id = ? THEN m.player_away_id
+							ELSE m.player_home_id
+							END
+				WHERE m.player_home_id = ? OR m.player_away_id = ?
+			)
+			SELECT * FROM user_matches;
 	`;
+
+	private TIMEPERIODS = {
+		'0d': '',
+		'1d': '-1 days',
+		'7d': '-7 days',
+		'30d': '-30 days',
+		'90d': '-90 days',
+		'1y': '-1 year'
+	}
 
 	async create(
 		player_home_score: number,
@@ -237,11 +247,84 @@ class MatchesRepository {
 		}
 	}
 
-	async getUserStats(user_id: number) : Promise<any | null> {
+	async getUserSummaryStats(user_id: number) : Promise<any | null> {
 		try {
-			const CTEResult = `match_id	started_at	finished_at	user_score	opp_score	opponent_id	opponent_username	duration	outcome`;
+			const matches_stats = await db.get(`
+				SELECT
+					COUNT(*) AS matches,
+					SUM(CASE WHEN (player_home_id = ? AND player_home_score > player_away_score) OR (player_away_id = ? AND player_away_score > player_home_score) THEN 1 ELSE 0 END) AS wins,
+					SUM(CASE WHEN (player_home_id = ? AND player_home_score < player_away_score) OR (player_away_id = ? AND player_away_score < player_home_score) THEN 1 ELSE 0 END) AS losses,
+					SUM(CASE WHEN (player_home_id = ? AND player_home_score = player_away_score) OR (player_away_id = ? AND player_away_score = player_home_score) THEN 1 ELSE 0 END) AS draws,
+					100.00 * SUM(CASE WHEN (player_home_id = ? AND player_home_score > player_away_score) OR (player_away_id = ? AND player_away_score > player_home_score) THEN 1 ELSE 0 END) / COUNT(*) AS win_rate
+				FROM matches
+				WHERE (player_home_id = ? OR player_away_id = ?)
+			`, [user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id]);
 
-			await db.run(this.SQLCTE, [user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id]);
+			const user_stats = await db.get(`
+				SELECT
+					*
+				FROM users_stats
+			`);
+
+			return { user_stats, matches_stats };
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
+	}
+
+	async getUserRecentMatches(user_id: number) : Promise<any | null> {
+		try {
+			const TMPTABLESQL = this.getTMPTABLESQL('all', 'all', 1);
+
+			await db.run('DROP TABLE IF EXISTS tmp_user_matches;');
+			await db.run(TMPTABLESQL, [user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id]);
+
+			const result = await db.all(`SELECT * FROM tmp_user_matches`);
+
+			return result;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
+	}
+
+	async getUserMatches(
+		user_id: number, 
+		timeFilter: '0d' | '1d' | '7d' | '30d' | '90d' | '1y' | 'all' = 'all',
+		gameTypeFilter: 'PING PONG' | 'XO' | 'TICTACTOE' | 'all' = 'all',
+		pageFilter: number
+	) : Promise<any | null> {
+		try {
+			const TMPTABLESQL = this.getTMPTABLESQL(timeFilter, gameTypeFilter, pageFilter);
+
+			await db.run('DROP TABLE IF EXISTS tmp_user_matches;');
+			console.log('TMP TABLE SQL: ', TMPTABLESQL);
+			await db.run(TMPTABLESQL, [user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id]);
+
+			const result = await db.all(`SELECT * FROM tmp_user_matches`);
+
+			return result;
+		} catch (err: any) {
+			console.error('SQLite Error: ', err);
+			throw new InternalServerError();
+		}
+	}
+
+	async getUserStats(
+		user_id: number, 
+		timeFilter: '0d' | '1d' | '7d' | '30d' | '90d' | '1y' | 'all' = 'all',
+		gameTypeFilter: 'PING PONG' | 'XO' | 'TICTACTOE' | 'all' = 'all'
+	) : Promise<any | null> {
+
+		
+		// `match_id	started_at	finished_at	user_score	opp_score	opponent_id	opponent_username	duration	outcome`;
+		try {
+			const TMPTABLESQL = this.getTMPTABLESQL(timeFilter, gameTypeFilter);
+
+			await db.run('DROP TABLE IF EXISTS tmp_user_matches;');
+			console.log('TMP TABLE SQL: ', TMPTABLESQL);
+			await db.run(TMPTABLESQL, [user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id, user_id]);
 
 			// matches | wins | losses | draws | win_rate
 			// total/max/min/avg user score | total/max/min/avg opp score
@@ -271,9 +354,9 @@ class MatchesRepository {
 					MIN(opp_score) AS min_opp_score,
 					AVG(opp_score) AS avg_opp_score,
 					
-					AVG(CASE WHEN outcome = 'W' THEN user_score ELSE NULL END) AS avg_opp_win_score,
-					AVG(CASE WHEN outcome = 'L' THEN user_score ELSE NULL END) AS avg_opp_loss_score,
-					AVG(CASE WHEN outcome = 'D' THEN user_score ELSE NULL END) AS avg_opp_draw_score,
+					AVG(CASE WHEN outcome = 'W' THEN opp_score ELSE NULL END) AS avg_opp_win_score,
+					AVG(CASE WHEN outcome = 'L' THEN opp_score ELSE NULL END) AS avg_opp_loss_score,
+					AVG(CASE WHEN outcome = 'D' THEN opp_score ELSE NULL END) AS avg_opp_draw_score,
 
 					SUM(duration) AS total_duration,
 					MAX(duration) AS max_duration,
@@ -395,6 +478,61 @@ class MatchesRepository {
 			console.error('SQLite Error: ', err);
 			throw new InternalServerError();
 		}
+	}
+
+	private getTMPTABLESQL(
+		timeFilter: '0d' | '1d' | '7d' | '30d' | '90d' | '1y' | 'all' = 'all',
+		gameTypeFilter: 'PING PONG' | 'XO' | 'TICTACTOE' | 'all' = 'all',
+		pageFilter?: number
+	) : string {
+
+		const timeCondition = timeFilter === 'all' ? '' : timeFilter === '0d' ? `AND date(finished_at) = date('now')`
+			: `AND date(finished_at) >= date('now', '${this.TIMEPERIODS[timeFilter]}')`;
+ 		const gameTypeCondition = gameTypeFilter === 'all' ? '' : `AND game_type = '${gameTypeFilter}'`;
+		const pageCondition = pageFilter ? `ORDER BY finished_at LIMIT ${pageFilter * 2} OFFSET ${(pageFilter - 1) * 2}` : '';
+		const whereClause = timeCondition + gameTypeCondition + pageCondition;
+
+	// +----------+------------+-------------+---------+---------------+------------+----------+-------------+-------------------+----------+---------+
+	// | match_id | started_at | finished_at | user_id | user_username | user_score | opp_score| opponent_id | opponent_username | duration | outcome |
+	// +----------+------------+-------------+---------+---------------+------------+----------+-------------+-------------------+----------+---------+
+
+		const SQL = `
+			CREATE TEMP TABLE tmp_user_matches AS
+			WITH user_matches AS (
+				SELECT
+					m.id AS match_id,
+					m.game_type AS game_type,
+					m.started_at,
+					m.finished_at,
+					u_self.id AS user_id,
+					u_self.username AS user_username,
+					CASE WHEN m.player_home_id = ? THEN m.player_home_score ELSE m.player_away_score END AS user_score,
+					CASE WHEN m.player_home_id = ? THEN m.player_away_score ELSE m.player_home_score END AS opp_score,
+					u_opp.id AS opponent_id,
+					u_opp.username AS opponent_username,
+					(strftime('%s', m.finished_at) - strftime('%s', m.started_at)) AS duration,
+					CASE
+						WHEN (m.player_home_id = ? AND m.player_home_score > m.player_away_score) 
+						OR (m.player_away_id = ? AND m.player_away_score > m.player_home_score) THEN 'W'
+						WHEN (m.player_home_id = ? AND m.player_home_score < m.player_away_score) 
+						OR (m.player_away_id = ? AND m.player_away_score < m.player_home_score) THEN 'L'
+						ELSE 'D'
+					END AS outcome
+				FROM matches m
+				JOIN users u_self
+					ON u_self.id = ?
+				JOIN users u_opp
+					ON u_opp.id = CASE
+									WHEN m.player_home_id = ? THEN m.player_away_id ELSE m.player_home_id
+						  		  END
+
+				WHERE (m.player_home_id = ? OR m.player_away_id = ?)
+				${whereClause}
+			)
+			SELECT * FROM user_matches;
+		`;
+
+		return SQL;
 	}
 }
 

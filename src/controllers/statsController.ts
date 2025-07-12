@@ -9,67 +9,90 @@ class StatsController {
 		this.statsService = new StatsService();
 	}
 
-	async MyStats(request: FastifyRequest, reply: FastifyReply) {
-		try {
-			// const { user_id: target_id } = request.params as IStatsRequest;
-			const user_id = request.user?.sub;
+	// async UserStats(request)
 
-			// const stats = await this.statsService.getUserStats(user_id!);
-			// console.log('myStats: ', stats);
+	// async MyStats(request: FastifyRequest, reply: FastifyReply) {
+	// 	try {
+	// 		// const { user_id: target_id } = request.params as IStatsRequest;
+	// 		const user_id = request.user?.sub;
 
-			// reply.status(201).send({ success: true, data: stats });
-		} catch (err: any) {
-			console.error(err);
-			const { statusCode, errorCode } = err;
-			reply.status(statusCode).send({ success: false, error: errorCode });
-		}
-	}
+	// 		// const stats = await this.statsService.getUserStats(user_id!);
+	// 		// console.log('myStats: ', stats);
 
-	async UserProfile(request: FastifyRequest, reply: FastifyReply) {
-		try {
-			const { username } = request.params as IStatsRequest;
-			// const user_id = request.user?.sub;
+	// 		// reply.status(201).send({ success: true, data: stats });
+	// 	} catch (err: any) {
+	// 		console.error(err);
+	// 		const { statusCode, errorCode } = err;
+	// 		reply.status(statusCode).send({ success: false, error: errorCode });
+	// 	}
+	// }
 
-			const stats = await this.statsService.getUserProfile(username);
 
-			reply.status(201).send({ success: true, data: stats });
-		} catch (err: any) {
-			console.error(err);
-			const { statusCode, errorCode } = err;
-			reply.status(statusCode).send({ success: false, error: errorCode });
-		}
-	}
+	// /*
+	// 	- USER INFO
+	// 	- USER PERFORMANCE
+	// 	- USER MATCHES (LAST 10)
+	// */
+	// async UserProfile(request: FastifyRequest, reply: FastifyReply) {
+	// 	try {
+	// 		const { username } = request.params as IStatsRequest;
+	// 		// const user_id = request.user?.sub;
 
-	async UserStats(request: FastifyRequest, reply: FastifyReply) {
-		try {
-			const { username } = request.params as IStatsRequest;
-			// const user_id = request.user?.sub;
+	// 		const stats = await this.statsService.getUserProfile(username);
 
-			const stats = await this.statsService.getUserPerformance(username);
+	// 		reply.status(201).send({ success: true, data: stats });
+	// 	} catch (err: any) {
+	// 		console.error(err);
+	// 		const { statusCode, errorCode } = err;
+	// 		reply.status(statusCode).send({ success: false, error: errorCode });
+	// 	}
+	// }
 
-			reply.status(201).send({ success: true, data: stats });
-		} catch (err: any) {
-			console.error(err);
-			const { statusCode, errorCode } = err;
-			reply.status(statusCode).send({ success: false, error: errorCode });
-		}
-	}
+	// async UserProfile_(request: FastifyRequest, reply: FastifyReply) {
+	// 	try {
+	// 		const { username } = request.params as IStatsRequest;
+	// 		// const user_id = request.user?.sub;
 
-	async UserMatches(request: FastifyRequest, reply: FastifyReply) {
-		try {
-			const { username } = request.params as IMatchesRequest;
-			const { page } = request.query as { page: string };
-			// const user_id = request.user?.sub;
+	// 		const stats = await this.statsService.getUserProfile(username);
 
-			const matchesPage = await this.statsService.getUserMatches(username!, parseInt(page)!);
+	// 		reply.status(201).send({ success: true, data: stats });
+	// 	} catch (err: any) {
+	// 		console.error(err);
+	// 		const { statusCode, errorCode } = err;
+	// 		reply.status(statusCode).send({ success: false, error: errorCode });
+	// 	}
+	// }
 
-			reply.status(201).send({ success: true, data: matchesPage });
-		} catch (err: any) {
-			console.error(err);
-			const { statusCode, errorCode } = err;
-			reply.status(statusCode).send({ success: false, error: errorCode });
-		}
-	}
+	// async UserStats(request: FastifyRequest, reply: FastifyReply) {
+	// 	try {
+	// 		const { username } = request.params as IStatsRequest;
+	// 		// const user_id = request.user?.sub;
+
+	// 		const stats = await this.statsService.getUserPerformance(username);
+
+	// 		reply.status(201).send({ success: true, data: stats });
+	// 	} catch (err: any) {
+	// 		console.error(err);
+	// 		const { statusCode, errorCode } = err;
+	// 		reply.status(statusCode).send({ success: false, error: errorCode });
+	// 	}
+	// }
+
+	// async UserMatches(request: FastifyRequest, reply: FastifyReply) {
+	// 	try {
+	// 		const { username } = request.params as IMatchesRequest;
+	// 		const { page } = request.query as { page: string };
+	// 		// const user_id = request.user?.sub;
+
+	// 		const matchesPage = await this.statsService.getUserMatches(username!, parseInt(page)!);
+
+	// 		reply.status(201).send({ success: true, data: matchesPage });
+	// 	} catch (err: any) {
+	// 		console.error(err);
+	// 		const { statusCode, errorCode } = err;
+	// 		reply.status(statusCode).send({ success: false, error: errorCode });
+	// 	}
+	// }
 }
 
 export default StatsController;

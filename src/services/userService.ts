@@ -1,47 +1,82 @@
 import RelationsRepository from "../repositories/relationsRepository";
 import UserRepository from "../repositories/userRepository";
 import { UserNotFoundError } from "../types/auth.types";
+import StatsService from "./statsService";
 
 class UserService {
 	private userRepository: UserRepository;
 	private relationsRepository: RelationsRepository;
+	private statsService: StatsService;
 
 	constructor() {
 		this.userRepository = new UserRepository();
 		this.relationsRepository = new RelationsRepository();
+		this.statsService = new StatsService();
 	}
 	
-	async MyProfile(user_id: number) {
-		console.log('fetchMe ID: ', user_id);
+	async fetchMe(user_id: number) {
 		const existingUser = await this.userRepository.findById(user_id);
 		if (!existingUser)
 			throw new UserNotFoundError();
 
-		return existingUser;
+		// const relation = await this.relationsRepository.findTwoWaysByUsers(user_id, existingUser.id);
+		// const friendship_status = this.extractPublicRelation(user_id, relation);
+
+		const statsSummary = await this.statsService.getUserStatsSummary(existingUser.id);
+
+		const recentMatches = await this.statsService.getUserRecentMatches(existingUser.id);
+
+		return {
+			user: this.extractPublicUserInfo(existingUser),
+			friendship_status: null,
+			stats: {
+				user: statsSummary.user_stats,
+				matches: statsSummary.matches_stats
+			},
+			matches: recentMatches
+		}
 	}
 
-	async UserProfile(user_id: number, username: string) {
+	async getUser(user_id: number, username: string) {
 		const existingUser = await this.userRepository.findByUsername(username);
 		if (!existingUser)
 			throw new UserNotFoundError();
 
 		const relation = await this.relationsRepository.findTwoWaysByUsers(user_id, existingUser.id);
-		if (relation && relation.relation_status === 'BLOCKED')
-			throw new UserNotFoundError();
+		const friendship_status = this.extractPublicRelation(user_id, relation);
 
-		let friendship_status = 'NONE';
-		if (relation && relation.relation_status === 'ACCEPTED')
-			friendship_status = 'FRIENDS';
-		if (relation && relation.relation_status === 'PENDING')
-			friendship_status = (relation.requester_user_id === user_id) ? 'OUTGOING' : 'INCOMING';
+		const statsSummary = await this.statsService.getUserStatsSummary(existingUser.id);
+
+		const recentMatches = await this.statsService.getUserRecentMatches(existingUser.id);
 
 		return {
-			...existingUser,
-			friendship_status
-		};
+			user: this.extractPublicUserInfo(existingUser),
+			friendship_status,
+			stats: {
+				user: statsSummary.user_stats,
+				matches: statsSummary.matches_stats
+			},
+			matches: recentMatches
+		}
 	}
 
-	async UpdateUserProfile(user_id: number, updates: any) {
+	async getUserStats(user_id: number) {
+		const existingUser = await this.userRepository.findById(user_id);
+		if (!existingUser)
+			throw new UserNotFoundError();
+
+		return await this.statsService.getUserStats(user_id);
+	}
+
+	async getUserMatches(user_id: number, page: number) {
+		const existingUser = await this.userRepository.findById(user_id);
+		if (!existingUser)
+			throw new UserNotFoundError();
+
+		return await this.statsService.getUserMatches(user_id, page);
+	}
+
+	async updateUser(user_id: number, updates: any) {
 		const existingUser = await this.userRepository.findById(user_id);
 		if (!existingUser)
 			throw new UserNotFoundError();
@@ -54,6 +89,36 @@ class UserService {
 		if (!newUser)
 			throw new UserNotFoundError()
 		return newUser;
+	}
+
+	private extractPublicUserInfo(privateUserInfo: any) {
+		const publicUserInfo = {
+			first_name: privateUserInfo.first_name,
+			last_name: privateUserInfo.last_name,
+			email: privateUserInfo.email,
+			username: privateUserInfo.username,
+			bio: privateUserInfo.bio,
+			avatar_url: privateUserInfo.avatar_url,
+			role: privateUserInfo.role
+		}
+
+		return publicUserInfo;
+	}
+
+	private extractPublicRelation(user_id: number, relation: any) {
+		if (!relation)
+			return null;
+
+		if (relation && relation.relation_status === 'BLOCKED')
+			throw new UserNotFoundError();
+
+		let friendship_status = 'NONE';
+		if (relation && relation.relation_status === 'ACCEPTED')
+			friendship_status = 'FRIENDS';
+		if (relation && relation.relation_status === 'PENDING')
+			friendship_status = (relation.requester_user_id === user_id) ? 'OUTGOING' : 'INCOMING';
+
+		return friendship_status;
 	}
 }
 
