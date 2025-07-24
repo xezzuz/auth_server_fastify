@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import AuthController from "../controllers/authController";
 import Authenticate from "../middleware/Authenticate";
-import { auth2FAConfirmSchema, auth2FADisableSchema, auth2FASetupSchema, auth2FAVerifySchema, authLoginSchema, authLogoutSchema, authOAuthSchema, authRefreshSchema, authRegisterSchema, authResetPasswordSchema, authResetPasswordUpdateSchema, authResetPasswordVerifySchema } from "../schemas/auth.schema";
+import { authLoginSchema, authLogoutSchema, authMFAVerifySchema, authOAuthSchema, authRefreshSchema, authRegisterSchema, authResetPasswordSchema, authResetPasswordUpdateSchema, authResetPasswordVerifySchema } from "../schemas/auth.schema";
 
 import cookie from '@fastify/cookie';
 import { db } from "../database";
@@ -53,26 +53,54 @@ async function authRouter(fastify: FastifyInstance) {
 
 
 	/*----------------------------- Multi-Factor Authentication -----------------------------*/
-	fastify.post('/2fa/setup', {
-		schema: auth2FASetupSchema,
+	fastify.post('/mfa/totp/setup/init', {
+		// schema: auth2FASetupSchema,
 		preHandler: fastify.authenticate,
-		handler: mfaController.TwoFactorSetupEndpoint.bind(mfaController)
+		handler: mfaController.TOTPSetupInitEndpoint.bind(mfaController)
 	});
-	fastify.post('/2fa/confirm', {
-		schema: auth2FAConfirmSchema,
+	fastify.post('/mfa/totp/setup/verify', {
+		schema: authMFAVerifySchema,
 		preHandler: fastify.authenticate,
-		handler: mfaController.TwoFactorConfirmEndpoint.bind(mfaController)
+		handler: mfaController.TOTPSetupVerifyEndpoint.bind(mfaController)
 	});
-	fastify.post('/2fa/verify', {
-		schema: auth2FAVerifySchema,
+
+	fastify.post('/mfa/email/setup/init', {
+		// schema: auth2FASetupSchema,
 		preHandler: fastify.authenticate,
-		handler: mfaController.TwoFactorVerifyEndpoint.bind(mfaController)
+		handler: mfaController.EmailOTPSetupInitEndpoint.bind(mfaController)
 	});
-	fastify.post('/2fa/disable', {
-		schema: auth2FADisableSchema,
+	fastify.post('/mfa/email/setup/verify', {
+		// schema: auth2FASetupSchema,
 		preHandler: fastify.authenticate,
-		handler: mfaController.TwoFactorVerifyEndpoint.bind(mfaController)
+		handler: mfaController.EmailOTPSetupVerifyEndpoint.bind(mfaController)
 	});
+
+	fastify.post('/mfa/sms/setup/init', {
+		// schema: auth2FASetupSchema,
+		preHandler: fastify.authenticate,
+		handler: mfaController.SMSOTPSetupInitEndpoint.bind(mfaController)
+	});
+	fastify.post('/mfa/sms/setup/verify', {
+		// schema: auth2FASetupSchema,
+		preHandler: fastify.authenticate,
+		handler: mfaController.SMSOTPSetupVerifyEndpoint.bind(mfaController)
+	});
+
+	// fastify.post('/2fa/confirm', {
+	// 	schema: auth2FAConfirmSchema,
+	// 	preHandler: fastify.authenticate,
+	// 	handler: mfaController.TwoFactorConfirmEndpoint.bind(mfaController)
+	// });
+	// fastify.post('/2fa/verify', {
+	// 	schema: auth2FAVerifySchema,
+	// 	preHandler: fastify.authenticate,
+	// 	handler: mfaController.TwoFactorVerifyEndpoint.bind(mfaController)
+	// });
+	// fastify.post('/2fa/disable', {
+	// 	schema: auth2FADisableSchema,
+	// 	preHandler: fastify.authenticate,
+	// 	handler: mfaController.TwoFactorVerifyEndpoint.bind(mfaController)
+	// });
 	
 
 	/*------------------------------------ Reset Password ------------------------------------*/

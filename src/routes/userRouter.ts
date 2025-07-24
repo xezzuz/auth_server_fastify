@@ -78,29 +78,29 @@ async function userRouter(fastify: FastifyInstance) {
 		handler: relationsController.acceptFriendRequest.bind(relationsController)
 	});
 
-	// fastify.put('/:user_id/friends/reject', {
-	// 	preHandler: fastify.authenticate,
-	// 	schema: relationsRequestSchema,
-	// 	handler: relationsController.acceptFriendRequest.bind(relationsController)
-	// });
+	fastify.put('/:user_id/friends/reject', {
+		preHandler: fastify.authenticate,
+		schema: relationsRequestSchema,
+		handler: relationsController.acceptFriendRequest.bind(relationsController)
+	});
 
-	// fastify.delete('/:user_id/friends', {
-	// 	preHandler: fastify.authenticate,
-	// 	schema: relationsRequestSchema,
-	// 	handler: relationsController.unfriend.bind(relationsController)
-	// });
+	fastify.delete('/:user_id/friends', {
+		preHandler: fastify.authenticate,
+		schema: relationsRequestSchema,
+		handler: relationsController.unfriend.bind(relationsController)
+	});
 
-	// fastify.post('/:user_id/block', {
-	// 	preHandler: fastify.authenticate,
-	// 	schema: relationsRequestSchema,
-	// 	handler: relationsController.blockUser.bind(relationsController)
-	// });
+	fastify.post('/:user_id/block', {
+		preHandler: fastify.authenticate,
+		schema: relationsRequestSchema,
+		handler: relationsController.blockUser.bind(relationsController)
+	});
 
-	// fastify.delete('/:user_id/block', {
-	// 	preHandler: fastify.authenticate,
-	// 	schema: relationsRequestSchema,
-	// 	handler: relationsController.unblockUser.bind(relationsController)
-	// });
+	fastify.delete('/:user_id/block', {
+		preHandler: fastify.authenticate,
+		schema: relationsRequestSchema,
+		handler: relationsController.unblockUser.bind(relationsController)
+	});
 
 	// fastify.get('/me/friends', {
 	// 	preHandler: fastify.authenticate,

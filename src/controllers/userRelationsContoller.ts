@@ -54,6 +54,22 @@ class RelationsController {
 		}
 	}
 
+	async rejectFriendRequest(request: FastifyRequest, reply: FastifyReply) {
+		try {
+			const { user_id: target_id } = request.params as IRelationsRequest;
+			const user_id = request.user?.sub;
+
+			// await this.relationsService.rejectFriendRequest(user_id!, parseInt(target_id));
+			await this.relationsService.rejectFriendRequest(parseInt(target_id), user_id!);
+
+			reply.status(204).send({ success: true, data: {} });
+		} catch (err: any) {
+			console.error(err);
+			const { statusCode, errorCode } = err;
+			reply.status(statusCode).send({ success: false, error: errorCode });
+		}
+	}
+
 	async blockUser(request: FastifyRequest, reply: FastifyReply) {
 		try {
 			const { user_id: target_id } = request.params as IRelationsRequest;

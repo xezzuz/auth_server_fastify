@@ -29,7 +29,11 @@ async function buildApp(): Promise<FastifyInstance> {
 
 	// REGISTER DATABASE PLUGIN
 	// fastify.register(SQLitePlugin);
-	await fastify.register(cors, { origin: true, credentials: true });
+	await fastify.register(cors, {
+		origin: true,
+		credentials: true,
+		methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE']
+	});
 
 	// REGISTER AUTH PLUGIN
 	await fastify.register(authRouter, { prefix: '/api/auth' });

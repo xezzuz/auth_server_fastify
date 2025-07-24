@@ -56,6 +56,20 @@ export interface IOAuthLoginRequest {
 	code: string
 }
 
+export interface IMFATOTPInitRequest {
+}
+
+export interface IMFAEmailOTPInitRequest {
+}
+
+export interface IMFASMSOTPInitRequest {
+	phone: string
+}
+
+export interface IMFAVerifyRequest {
+	code: string
+}
+
 export interface I2FASetupRequest {
 	method: string,
 	contact: string

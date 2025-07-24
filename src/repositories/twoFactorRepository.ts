@@ -251,7 +251,7 @@ class TwoFactorRepository {
 	async deletePending2FAByType(type: string, user_id: number) {
 		try {
 			const runResult = await db.run(
-				`DELETE FROM pending_2fa WHERE user_id = ? method = ?`,
+				`DELETE FROM pending_2fa WHERE user_id = ? AND method = ?`,
 				[user_id, type]
 			);
 			return runResult.changes > 0;

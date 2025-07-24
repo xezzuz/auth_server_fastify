@@ -93,7 +93,7 @@ class TwoFactorService {
 		return ;
 	}
 	
-	async confirmOTP(otp_code: string, method: string, user_id: number) : Promise<void> {
+	async confirmOTP(method: string, otp_code: string, user_id: number) : Promise<void> {
 		const pendingOTP = await this.twoFactorRepository.findPending2FAMethodByType(method, user_id);
 		if (!pendingOTP)
 			throw new _2FANotFound(method);

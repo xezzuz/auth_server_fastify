@@ -88,6 +88,25 @@ class RelationsService {
 
 		return updatedRelation;
 	}
+
+	async rejectFriendRequest(sender_id: number, receiver_id: number) {
+		const targetExists = await this.userRepository.findById(sender_id);
+		if (!targetExists)
+			throw new UserNotFoundError();
+
+		const existingTwoWayRelation = await this.relationsRepository.findTwoWaysByUsers(
+			sender_id,
+			receiver_id
+		);
+
+		if (!existingTwoWayRelation || existingTwoWayRelation.relation_status !== 'PENDING')
+			throw new Error('NO PENDING REQUEST FROM THIS USER TO REJECT');
+		
+		if (existingTwoWayRelation.receiver_user_id !== receiver_id)
+			throw new Error('ONLY THE RECEIVER CAN REJECT REQUEST');
+		
+		await this.relationsRepository.deleteRelationById(existingTwoWayRelation.id);
+	}
 	
 	async blockUser(blocker_id: number, blocked_id: number) {
 		const targetExists = await this.userRepository.findById(blocked_id);
@@ -104,7 +123,8 @@ class RelationsService {
 		if (existingTwoWayRelation && existingTwoWayRelation.relation_status === 'BLOCKED' && existingTwoWayRelation.receiver_user_id === blocker_id)
 			throw new Error('UNABLE TO BLOCK (HE ALREADY BLOCKED YOU)');
 
-		await this.relationsRepository.deleteRelationById(existingTwoWayRelation.id);
+		if (existingTwoWayRelation)
+			await this.relationsRepository.deleteRelationById(existingTwoWayRelation.id);
 		const newRelationID = await this.relationsRepository.create(
 			blocker_id,
 			blocked_id,

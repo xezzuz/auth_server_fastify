@@ -46,32 +46,31 @@ const authOAuthQueryString = {
 	required: ['code']
 }
 
-const auth2FASetupBody = {
-	type: 'object',
-	properties: {
-		method: { type: 'string' },
-		contact: { type: 'string' }
-	},
-	required: ['method', 'contact']
-}
+// const auth2FASetupBody = {
+// 	type: 'object',
+// 	properties: {
+// 		method: { type: 'string' },
+// 		contact: { type: 'string' }
+// 	},
+// 	required: ['method', 'contact']
+// }
 
-const auth2FAConfirmBody = {
+const authMFAVerifyBody = {
 	type: 'object',
 	properties: {
-		method: { type: 'string' },
 		code: { type: 'string' }
 	},
-	required: ['method', 'code']
+	required: ['code']
 }
 
-const auth2FADisableBody = {
-	type: 'object',
-	properties: {
-		method: { type: 'string' },
-		password: { type: 'string' }
-	},
-	required: ['method', 'password']
-}
+// const auth2FADisableBody = {
+// 	type: 'object',
+// 	properties: {
+// 		method: { type: 'string' },
+// 		password: { type: 'string' }
+// 	},
+// 	required: ['method', 'password']
+// }
 
 const authResetPasswordBody = {
 	type: 'object',
@@ -120,20 +119,24 @@ export const authOAuthSchema = {
 	querystring: authOAuthQueryString
 }
 
-export const auth2FASetupSchema = {
-	body: auth2FASetupBody
-}
+// export const auth2FASetupSchema = {
+// 	body: auth2FASetupBody
+// }
 
-export const auth2FAConfirmSchema = {
-	body: auth2FAConfirmBody
-}
+// export const auth2FAConfirmSchema = {
+// 	body: auth2FAConfirmBody
+// }
 
-export const auth2FAVerifySchema = {
-	body: auth2FAConfirmBody
-}
+// export const auth2FAVerifySchema = {
+// 	body: auth2FAConfirmBody
+// }
 
-export const auth2FADisableSchema = {
-	body: auth2FADisableBody
+// export const auth2FADisableSchema = {
+// 	body: auth2FADisableBody
+// }
+
+export const authMFAVerifySchema = {
+	body: authMFAVerifyBody
 }
 
 export const authResetPasswordSchema = {

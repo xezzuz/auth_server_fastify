@@ -42,8 +42,8 @@ class UserService {
 		if (!existingUser)
 			throw new UserNotFoundError();
 
-		const relation = await this.relationsRepository.findTwoWaysByUsers(user_id, existingUser.id);
-		const friendship_status = this.extractPublicRelation(user_id, relation);
+		const relation = user_id === existingUser.id ? null : await this.relationsRepository.findTwoWaysByUsers(user_id, existingUser.id);
+		const friendship_status = user_id === existingUser.id ? null : this.extractPublicRelation(user_id, relation);
 
 		const statsSummary = await this.statsService.getUserStatsSummary(existingUser.id);
 
@@ -93,6 +93,7 @@ class UserService {
 
 	private extractPublicUserInfo(privateUserInfo: any) {
 		const publicUserInfo = {
+			id: privateUserInfo.id,
 			first_name: privateUserInfo.first_name,
 			last_name: privateUserInfo.last_name,
 			email: privateUserInfo.email,
@@ -106,9 +107,6 @@ class UserService {
 	}
 
 	private extractPublicRelation(user_id: number, relation: any) {
-		if (!relation)
-			return null;
-
 		if (relation && relation.relation_status === 'BLOCKED')
 			throw new UserNotFoundError();
 
