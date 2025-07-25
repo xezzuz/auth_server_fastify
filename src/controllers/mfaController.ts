@@ -122,10 +122,9 @@ class MFAController {
 
 	async SMSOTPSetupInitEndpoint(request: FastifyRequest, reply: FastifyReply) {
 		const user_id = request.user?.sub;
+		const { phone } = request.body as { phone: string };
 		
 		try {
-			const phone = '+212636299821';
-
 			await this.twoFactorService.setupOTP('sms', phone, user_id!);
 			
 			const { status, body } = AuthResponseFactory.getSuccessResponse(200, {});

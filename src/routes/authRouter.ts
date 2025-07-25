@@ -150,20 +150,7 @@ async function authRouter(fastify: FastifyInstance) {
 
 	fastify.get('/run-sql', async () => {
 		// await db.run(`DROP TABLE matches`);
-		const result = await db.run(`INSERT INTO matches 
-		(player_home_score, player_away_score, game_type, started_at, finished_at, player_home_id, player_away_id) 
-		VALUES
-		-- within last 7 days
-		(21, 18, 'PING PONG', datetime('now', '-1 day'), datetime('now', '-1 day', '+30 minutes'), 8, 2),
-		(15, 21, 'TICTACTOE', datetime('now', '-3 days'), datetime('now', '-3 days', '+5 minutes'), 3, 8),
-		
-		-- within last 30 but older than 7
-		(11, 21, 'PING PONG', datetime('now', '-10 days'), datetime('now', '-10 days', '+20 minutes'), 2, 8),
-		(21, 19, 'TICTACTOE', datetime('now', '-20 days'), datetime('now', '-20 days', '+3 minutes'), 4, 8),
-		
-		-- older than 30
-		(21, 14, 'PING PONG', datetime('now', '-40 days'), datetime('now', '-40 days', '+25 minutes'), 8, 3),
-		(17, 21, 'TICTACTOE', datetime('now', '-60 days'), datetime('now', '-60 days', '+4 minutes'), 8, 4);`);
+		const result = await db.run(`DELETE FROM pending_2fa`);
 		console.log(result);
 	});
 }
